@@ -1,0 +1,13 @@
+{
+  "name": "password-entropy-lab-bot",
+  "version": "1.0.0",
+  "description": "Telegram бот для Password & Entropy Lab",
+  "main": "telegram-bot.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node telegram-bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}

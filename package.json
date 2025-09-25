@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "bot": "node telegram-bot.cjs"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
@@ -15,6 +16,7 @@
     "vite-plugin-solid": "^2.7.0"
   },
   "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
     "pdf-lib": "^1.17.1",
     "solid-js": "^1.7.8"
   }
