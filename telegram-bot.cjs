@@ -116,9 +116,7 @@ bot.onText(/\/about/, (msg) => {
 ✅ Открытый исходный код
 ✅ Поддержка русской клавиатуры
 ✅ Экспорт в PDF и JSON
-✅ Работает без интернета после загрузки
-
-🔗 **Исходный код:** github.com/Razmik-Kutinava/password-entropy-lab`;
+✅ Работает без интернета после загрузки`;
 
   const options = {
     reply_markup: {
@@ -226,9 +224,7 @@ bot.on('callback_query', (callbackQuery) => {
 🎯 Анализ паролей по стандарту NIST 800-63B
 💻 Технологии: Solid.js + TypeScript + PDF-lib
 🔒 Полная приватность - все локально
-📱 Telegram Mini App
-
-🔗 **Исходный код:** github.com/Razmik-Kutinava/password-entropy-lab`, {
+📱 Telegram Mini App`, {
         reply_markup: {
           inline_keyboard: [
             [

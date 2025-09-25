@@ -1,22 +1,29 @@
-# Dockerfile for Railway deployment
-FROM node:18-alpine
+# Railway Dockerfile v3 - No TypeScript build
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package.json
 COPY package*.json ./
 
-# Install dependencies
+# Install only production dependencies first
 RUN npm ci --only=production
 
-# Copy source code
+# Install dev dependencies for build
+RUN npm install typescript @types/node vite vite-plugin-solid
+
+# Copy source
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build with explicit commands
+RUN npx tsc && npx vite build
 
-# Expose port
+# Remove dev dependencies
+RUN npm prune --production
+
+# Copy simple server
+COPY simple-server.js ./
+
 EXPOSE 3000
 
-# Start command
-CMD ["node", "server.js"]
+CMD ["node", "simple-server.js"]
