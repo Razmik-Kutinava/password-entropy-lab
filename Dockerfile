@@ -21,9 +21,6 @@ RUN npx tsc && npx vite build
 # Remove dev dependencies
 RUN npm prune --production
 
-# Copy simple server
-COPY simple-server.js ./
-
 EXPOSE 3000
 
-CMD ["node", "simple-server.js"]
+CMD ["npm", "start"]
