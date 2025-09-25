@@ -41,6 +41,10 @@ npm run preview
 ### 1. Создание бота
 Ваш токен бота: `8319585111:AAF8kp_kxMe1ZC_iFSB3s2ESTMbKRcZ6qJo`
 
+### 2. URL приложения
+После деплоя ваше приложение будет доступно по адресу:
+`https://razmik-kutinava.github.io/password-entropy-lab/`
+
 ### 2. Настройка Menu Button
 Отправьте команды @BotFather:
 
@@ -48,7 +52,7 @@ npm run preview
 /setmenubutton
 @your_bot_username
 🔐 Анализ пароля
-https://your-domain.com/
+https://razmik-kutinava.github.io/password-entropy-lab/
 ```
 
 ### 3. Настройка описания
@@ -72,7 +76,7 @@ about - О приложении
 ### GitHub Pages
 1. Соберите проект: `npm run build`
 2. Загрузите содержимое папки `dist/` в ваш GitHub Pages репозиторий
-3. URL будет: `https://username.github.io/repository-name/`
+3. URL будет: `https://razmik-kutinava.github.io/password-entropy-lab/`
 
 ### Vercel
 1. Подключите репозиторий к Vercel
