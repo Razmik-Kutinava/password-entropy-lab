@@ -1,18 +1,17 @@
-// Простой Telegram бот для Password & Entropy Lab
+// Production Telegram bot for Password & Entropy Lab
 const TelegramBot = require('node-telegram-bot-api');
 
-// Токен бота
-const token = '8319585111:AAF8kp_kxMe1ZC_iFSB3s2ESTMbKRcZ6qJo';
+// Environment variables
+const token = process.env.TELEGRAM_BOT_TOKEN || '8319585111:AAF8kp_kxMe1ZC_iFSB3s2ESTMbKRcZ6qJo';
+const APP_URL = process.env.APP_URL || 'https://your-app.up.railway.app';
 
-// URL Mini App (пока локальный, потом заменим на GitHub Pages)
-const MINI_APP_URL = 'https://scutiform-pushed-malorie.ngrok-free.dev';
-
-// Создаем бота
+// Create bot
 const bot = new TelegramBot(token, { polling: true });
 
-console.log('🤖 Бот Password & Entropy Lab запущен!');
+console.log('🤖 Production Bot Password & Entropy Lab запущен!');
+console.log('📱 App URL:', APP_URL);
 
-// Команда /start
+// Command /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from.first_name || 'пользователь';
@@ -34,7 +33,7 @@ bot.onText(/\/start/, (msg) => {
         [
           {
             text: '🔐 Открыть приложение',
-            web_app: { url: MINI_APP_URL }
+            web_app: { url: APP_URL }
           }
         ],
         [
@@ -54,7 +53,7 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(chatId, welcomeMessage, options);
 });
 
-// Команда /help
+// Command /help
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
   
@@ -83,7 +82,7 @@ bot.onText(/\/help/, (msg) => {
         [
           {
             text: '🔐 Открыть приложение',
-            web_app: { url: MINI_APP_URL }
+            web_app: { url: APP_URL }
           }
         ]
       ]
@@ -93,7 +92,7 @@ bot.onText(/\/help/, (msg) => {
   bot.sendMessage(chatId, helpMessage, options);
 });
 
-// Команда /about
+// Command /about
 bot.onText(/\/about/, (msg) => {
   const chatId = msg.chat.id;
   
@@ -126,7 +125,7 @@ bot.onText(/\/about/, (msg) => {
         [
           {
             text: '🔐 Открыть приложение',
-            web_app: { url: MINI_APP_URL }
+            web_app: { url: APP_URL }
           }
         ]
       ]
@@ -136,7 +135,7 @@ bot.onText(/\/about/, (msg) => {
   bot.sendMessage(chatId, aboutMessage, options);
 });
 
-// Команда /security
+// Command /security
 bot.onText(/\/security/, (msg) => {
   const chatId = msg.chat.id;
   
@@ -160,12 +159,6 @@ bot.onText(/\/security/, (msg) => {
 • Сравнение с встроенными словарями
 • Обнаружение паттернов
 
-🔍 **Проверить самостоятельно:**
-1. Откройте DevTools (F12)
-2. Вкладка Network
-3. Введите пароль
-4. Убедитесь - нет исходящих запросов!
-
 ⚠️ **Рекомендации:**
 • Используйте уникальные пароли для каждого сервиса
 • Включите двухфакторную аутентификацию
@@ -178,7 +171,7 @@ bot.onText(/\/security/, (msg) => {
         [
           {
             text: '🔐 Открыть приложение',
-            web_app: { url: MINI_APP_URL }
+            web_app: { url: APP_URL }
           }
         ]
       ]
@@ -188,7 +181,7 @@ bot.onText(/\/security/, (msg) => {
   bot.sendMessage(chatId, securityMessage, options);
 });
 
-// Обработка callback кнопок
+// Handle callback queries
 bot.on('callback_query', (callbackQuery) => {
   const message = callbackQuery.message;
   const data = callbackQuery.data;
@@ -211,7 +204,7 @@ bot.on('callback_query', (callbackQuery) => {
             [
               {
                 text: '🔐 Открыть приложение',
-                web_app: { url: MINI_APP_URL }
+                web_app: { url: APP_URL }
               }
             ]
           ]
@@ -234,7 +227,7 @@ bot.on('callback_query', (callbackQuery) => {
             [
               {
                 text: '🔐 Открыть приложение',
-                web_app: { url: MINI_APP_URL }
+                web_app: { url: APP_URL }
               }
             ]
           ]
@@ -244,12 +237,24 @@ bot.on('callback_query', (callbackQuery) => {
   }
 });
 
-// Обработка ошибок
+// Error handling
 bot.on('error', (error) => {
   console.error('❌ Ошибка бота:', error);
 });
 
-// Обработка polling ошибок
 bot.on('polling_error', (error) => {
   console.error('❌ Ошибка polling:', error);
+});
+
+// Health check endpoint for Railway
+const express = require('express');
+const app = express();
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', bot: 'running' });
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`🏥 Health check server running on port ${PORT}`);
 });

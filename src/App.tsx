@@ -42,6 +42,8 @@ declare global {
         isExpanded: boolean;
         viewportHeight: number;
         viewportStableHeight: number;
+        showAlert?(message: string): void;
+        showPopup?(params: any): void;
       };
     };
   }
@@ -93,8 +95,14 @@ export default function App() {
       tg.MainButton.show();
       tg.MainButton.onClick(() => {
         if (password().length > 0) {
-          exportPDF(result());
+          console.log("MainButton PDF export clicked");
+          exportPDF(result()).catch(error => {
+            console.error("PDF export failed:", error);
+            tg.showAlert?.("Ошибка экспорта PDF. Попробуйте JSON экспорт.") || 
+            alert("Ошибка экспорта PDF. Попробуйте JSON экспорт.");
+          });
         } else {
+          tg.showAlert?.("Введите пароль для анализа") || 
           alert("Введите пароль для анализа");
         }
       });

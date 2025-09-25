@@ -7,5 +7,15 @@ export default defineConfig({
   build: {
     target: 'esnext',
     outDir: 'dist'
+  },
+  server: {
+    host: true,
+    allowedHosts: [
+      'scutiform-pushed-malorie.ngrok-free.dev',
+      '.ngrok-free.dev',
+      '.ngrok.io',
+      'localhost',
+      '127.0.0.1'
+    ]
   }
 });
