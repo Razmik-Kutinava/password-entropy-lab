@@ -1,16 +1,26 @@
-// Простой Telegram бот для Password & Entropy Lab
+// Production Telegram bot для Railway
 const TelegramBot = require('node-telegram-bot-api');
 
-// Токен бота
-const token = '8319585111:AAF8kp_kxMe1ZC_iFSB3s2ESTMbKRcZ6qJo';
+// Получаем переменные из окружения Railway
+const token = process.env.TELEGRAM_BOT_TOKEN;
+const MINI_APP_URL = process.env.APP_URL;
 
-// URL Mini App на Railway
-const MINI_APP_URL = 'https://password-entropy-lab-production.up.railway.app';
+// Проверяем что переменные установлены
+if (!token) {
+  console.error('❌ TELEGRAM_BOT_TOKEN не установлен в environment variables');
+  process.exit(1);
+}
+
+if (!MINI_APP_URL) {
+  console.error('❌ APP_URL не установлен в environment variables');
+  process.exit(1);
+}
+
+console.log('🚀 Production Bot запущен!');
+console.log('📱 Mini App URL:', MINI_APP_URL);
 
 // Создаем бота
 const bot = new TelegramBot(token, { polling: true });
-
-console.log('🤖 Бот Password & Entropy Lab запущен!');
 
 // Команда /start
 bot.onText(/\/start/, (msg) => {
@@ -249,3 +259,5 @@ bot.on('error', (error) => {
 bot.on('polling_error', (error) => {
   console.error('❌ Ошибка polling:', error);
 });
+
+console.log('🤖 Production Bot Password & Entropy Lab запущен!');

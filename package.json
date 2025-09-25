@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "node server.cjs",
-    "bot": "node telegram-bot.cjs"
+    "start": "node start-production.cjs",
+    "bot": "node telegram-bot.cjs",
+    "bot:prod": "node bot-production.cjs"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
