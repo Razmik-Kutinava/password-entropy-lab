@@ -1,6 +1,6 @@
 // /src/App.tsx
 import { createSignal, createMemo, onMount, For, Show } from "solid-js";
-import { assessPassword, NIST_MODERATE, type Assessment, type Policy, ALL_POLICIES, POLICY_CATEGORIES } from "./core/assessPassword";
+import { assessPassword, assessPasswordAllPolicies, NIST_MODERATE, type Assessment, type Policy, ALL_POLICIES, POLICY_CATEGORIES } from "./core/assessPassword";
 import { exportPDF, exportJSON } from "./utils/exportPDF";
 
 // Типы для Telegram WebApp
@@ -125,7 +125,24 @@ export default function App() {
 
   const handleExportJSON = () => {
     if (password().length > 0) {
-      exportJSON(result());
+      // Создаем расширенный JSON отчет с анализом по всем политикам
+      const allResults = assessPasswordAllPolicies(password());
+      const extendedReport = {
+        ...result(),
+        all_policies_analysis: allResults,
+        selected_policy: selectedPolicy(),
+        analysis_timestamp: new Date().toISOString(),
+        report_type: "COMPREHENSIVE_SECURITY_ANALYSIS",
+        policies_summary: ALL_POLICIES.map(policy => ({
+          name: policy.name,
+          display_name: policy.display_name,
+          category: policy.category,
+          compliance_status: allResults[policy.name].compliance.every(c => c.status === "PASS") ? "PASS" : 
+                            allResults[policy.name].compliance.some(c => c.status === "FAIL") ? "FAIL" : "WARN"
+        }))
+      };
+      
+      exportJSON(extendedReport);
     } else {
       alert("Введите пароль для анализа");
     }
@@ -133,7 +150,20 @@ export default function App() {
 
   const handleExportPDF = () => {
     if (password().length > 0) {
-      exportPDF(result());
+      // Создаем расширенный отчет с анализом по всем политикам
+      const allResults = assessPasswordAllPolicies(password());
+      const extendedReport = {
+        ...result(),
+        all_policies_analysis: allResults,
+        selected_policy: selectedPolicy(),
+        analysis_timestamp: new Date().toISOString(),
+        report_type: "COMPREHENSIVE_SECURITY_ANALYSIS"
+      };
+      
+      exportPDF(extendedReport).catch(error => {
+        console.error("PDF export failed:", error);
+        alert("Ошибка экспорта PDF. Попробуйте JSON экспорт.");
+      });
     } else {
       alert("Введите пароль для анализа");
     }
@@ -141,63 +171,54 @@ export default function App() {
 
   return (
     <div class="container">
-      <h1 style="text-align: center; margin-bottom: 24px; color: var(--tg-theme-text-color, #000);">
-        🔐 Password & Entropy Lab
-      </h1>
+      {/* 🎯 ЗАГОЛОВОК */}
+      <header class="app-header">
+        <h1 class="app-title">🔐 Password & Entropy Lab</h1>
+        <p class="app-subtitle">Профессиональный анализ безопасности паролей</p>
+      </header>
       
-      {/* Селектор политики безопасности */}
-      <div style="margin-bottom: 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <label style="font-weight: bold; color: var(--tg-theme-text-color, #333);">
-            🛡️ Политика безопасности:
+      {/* 🛡️ СЕЛЕКТОР ПОЛИТИКИ БЕЗОПАСНОСТИ */}
+      <div class="policy-selector">
+        <div class="policy-selector-header">
+          <label class="policy-label">
+            🛡️ Стандарт безопасности
           </label>
           <button
+            class="policy-current glow-animation"
             onClick={() => setShowPolicySelector(!showPolicySelector())}
-            style={`
-              background: ${selectedPolicy().color}; 
-              color: white; 
-              border: none; 
-              border-radius: 20px; 
-              padding: 8px 16px; 
-              cursor: pointer; 
-              font-size: 14px;
-              font-weight: bold;
-              display: flex;
-              align-items: center;
-              gap: 6px;
-              transition: all 0.2s ease;
-            `}
           >
             {selectedPolicy().icon} {selectedPolicy().display_name}
-            <span style="margin-left: 4px;">{showPolicySelector() ? "▲" : "▼"}</span>
+            <span>{showPolicySelector() ? "▲" : "▼"}</span>
           </button>
         </div>
         
         <Show when={showPolicySelector()}>
           <div style="
-            background: var(--tg-theme-bg-color, #f8f9fa);
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 16px;
+            backdrop-filter: blur(10px);
           ">
-            {/* Категории */}
-            <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 8px;">
+            {/* 📂 КАТЕГОРИИ */}
+            <div style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px;">
               <For each={Object.entries(POLICY_CATEGORIES)}>
                 {([key, category]) => (
                   <button
                     onClick={() => setActiveCategory(key as keyof typeof POLICY_CATEGORIES)}
                     style={`
-                      background: ${activeCategory() === key ? '#3b82f6' : 'transparent'};
-                      color: ${activeCategory() === key ? 'white' : 'var(--tg-theme-text-color, #666)'};
-                      border: 1px solid ${activeCategory() === key ? '#3b82f6' : '#ddd'};
-                      border-radius: 20px;
-                      padding: 8px 16px;
+                      background: ${activeCategory() === key ? 'var(--gradient-cyber)' : 'rgba(255, 255, 255, 0.1)'};
+                      color: white;
+                      border: 1px solid ${activeCategory() === key ? 'transparent' : 'var(--border-color)'};
+                      border-radius: 25px;
+                      padding: 10px 18px;
                       cursor: pointer;
-                      font-size: 12px;
-                      font-weight: bold;
+                      font-size: 13px;
+                      font-weight: 600;
                       white-space: nowrap;
-                      transition: all 0.2s ease;
+                      transition: all 0.3s ease;
+                      backdrop-filter: blur(10px);
                     `}
                   >
                     {category.title}
@@ -206,18 +227,26 @@ export default function App() {
               </For>
             </div>
             
-            {/* Описание категории */}
-            <p style="
-              color: var(--tg-theme-hint-color, #666);
-              font-size: 13px;
-              margin: 0 0 16px 0;
-              font-style: italic;
+            {/* 📋 ОПИСАНИЕ КАТЕГОРИИ */}
+            <div style="
+              background: rgba(0, 102, 204, 0.1);
+              border-left: 4px solid var(--primary-blue);
+              padding: 16px;
+              border-radius: 8px;
+              margin-bottom: 20px;
             ">
-              {POLICY_CATEGORIES[activeCategory()].description}
-            </p>
+              <p style="
+                color: var(--text-secondary);
+                font-size: 14px;
+                margin: 0;
+                font-style: italic;
+              ">
+                💡 {POLICY_CATEGORIES[activeCategory()].description}
+              </p>
+            </div>
             
-            {/* Политики */}
-            <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+            {/* 🛡️ ПОЛИТИКИ */}
+            <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
               <For each={POLICY_CATEGORIES[activeCategory()].policies}>
                 {(policy) => (
                   <button
@@ -226,41 +255,69 @@ export default function App() {
                       setShowPolicySelector(false);
                     }}
                     style={`
-                      background: ${selectedPolicy().name === policy.name ? policy.color + '20' : 'transparent'};
-                      border: 2px solid ${selectedPolicy().name === policy.name ? policy.color : '#e5e7eb'};
-                      border-radius: 12px;
-                      padding: 12px;
+                      background: ${selectedPolicy().name === policy.name ? 
+                        `linear-gradient(135deg, ${policy.color}20, ${policy.color}10)` : 
+                        'rgba(255, 255, 255, 0.05)'
+                      };
+                      border: 2px solid ${selectedPolicy().name === policy.name ? policy.color : 'var(--border-color)'};
+                      border-radius: 16px;
+                      padding: 16px;
                       cursor: pointer;
                       text-align: left;
-                      transition: all 0.2s ease;
+                      transition: all 0.3s ease;
                       display: flex;
                       align-items: center;
-                      gap: 12px;
+                      gap: 16px;
+                      backdrop-filter: blur(10px);
                     `}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = `0 8px 32px ${policy.color}40`;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
                     <div style={`
-                      background: ${policy.color};
+                      background: linear-gradient(135deg, ${policy.color}, ${policy.color}dd);
                       color: white;
                       border-radius: 50%;
-                      width: 40px;
-                      height: 40px;
+                      width: 48px;
+                      height: 48px;
                       display: flex;
                       align-items: center;
                       justify-content: center;
-                      font-size: 18px;
+                      font-size: 20px;
                       flex-shrink: 0;
+                      box-shadow: 0 4px 16px ${policy.color}40;
                     `}>
                       {policy.icon}
                     </div>
                     <div style="flex: 1;">
-                      <div style="font-weight: bold; color: var(--tg-theme-text-color, #333); margin-bottom: 4px;">
+                      <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px; font-size: 16px;">
                         {policy.display_name}
                       </div>
-                      <div style="font-size: 12px; color: var(--tg-theme-hint-color, #666); line-height: 1.3;">
+                      <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
                         {policy.description}
                       </div>
-                      <div style="font-size: 11px; color: var(--tg-theme-hint-color, #888); margin-top: 4px;">
-                        Мин. длина: {policy.min_length} • Энтропия: {policy.min_entropy || 30}+ бит
+                      <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary);">
+                        <span style="
+                          background: rgba(0, 102, 204, 0.2);
+                          padding: 4px 8px;
+                          border-radius: 12px;
+                          border: 1px solid rgba(0, 102, 204, 0.3);
+                        ">
+                          📏 {policy.min_length}+ симв.
+                        </span>
+                        <span style="
+                          background: rgba(0, 200, 81, 0.2);
+                          padding: 4px 8px;
+                          border-radius: 12px;
+                          border: 1px solid rgba(0, 200, 81, 0.3);
+                        ">
+                          ⚡ {policy.min_entropy || 30}+ бит
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -271,18 +328,18 @@ export default function App() {
         </Show>
       </div>
       
-      <div style="position: relative; margin-bottom: 16px;">
+      {/* 🔐 ПОЛЕ ВВОДА ПАРОЛЯ */}
+      <div class="input-container">
         <input
           type={showPassword() ? "text" : "password"}
           class="input-field"
-          placeholder="Введите пароль для анализа..."
+          placeholder="🔑 Введите пароль для профессионального анализа..."
           onInput={handlePasswordInput}
           value={password()}
-          style="padding-right: 50px;"
         />
         <button
+          class="password-toggle"
           onClick={() => setShowPassword(!showPassword())}
-          style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px;"
           title={showPassword() ? "Скрыть пароль" : "Показать пароль"}
         >
           {showPassword() ? "🙈" : "👁️"}
@@ -292,89 +349,97 @@ export default function App() {
       {/* Показываем анализ только если есть пароль */}
       {password().length > 0 && (
         <>
-          {/* Текущая политика */}
-          <div style={`
-            background: ${selectedPolicy().color}15;
+          {/* 🎯 ТЕКУЩИЙ СТАНДАРТ */}
+          <div class="section" style={`
+            background: linear-gradient(135deg, ${selectedPolicy().color}15, ${selectedPolicy().color}08);
             border: 2px solid ${selectedPolicy().color};
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            box-shadow: 0 4px 16px ${selectedPolicy().color}30;
           `}>
-            <div style={`
-              background: ${selectedPolicy().color};
-              color: white;
-              border-radius: 50%;
-              width: 32px;
-              height: 32px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 14px;
-              flex-shrink: 0;
-            `}>
-              {selectedPolicy().icon}
-            </div>
-            <div>
-              <div style="font-weight: bold; color: var(--tg-theme-text-color, #333);">
-                Проверка по стандарту: {selectedPolicy().display_name}
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style={`
+                background: linear-gradient(135deg, ${selectedPolicy().color}, ${selectedPolicy().color}dd);
+                color: white;
+                border-radius: 50%;
+                width: 48px;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+                box-shadow: 0 4px 16px ${selectedPolicy().color}40;
+              `}>
+                {selectedPolicy().icon}
               </div>
-              <div style="font-size: 12px; color: var(--tg-theme-hint-color, #666);">
-                {selectedPolicy().description}
+              <div style="flex: 1;">
+                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px; font-size: 18px;">
+                  🎯 Анализ по стандарту: {selectedPolicy().display_name}
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.4;">
+                  {selectedPolicy().description}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Статус */}
+          {/* 📊 ВЕРДИКТ */}
           <div class={`status-card ${
             status() === "OK" ? "status-ok" : 
             status() === "WARN" ? "status-warn" : "status-fail"
           }`}>
-            <strong>Вердикт: </strong>
-            {status() === "OK" ? "✅ Пароль соответствует требованиям" : 
-             status() === "WARN" ? "⚠️ Есть предупреждения" : 
-             "❌ Пароль не соответствует требованиям"}
-          </div>
-
-          {/* Основные метрики */}
-          <div class="section">
-            <div class="metric">
-              <strong>Длина:</strong> {result().length} символов
+            <div style="font-size: 20px; margin-bottom: 8px;">
+              {status() === "OK" ? "🛡️" : status() === "WARN" ? "⚠️" : "🚨"}
             </div>
-            <div class="metric">
-              <strong>Энтропия:</strong> {result().entropy_bits} бит
-            </div>
-            <div class="metric">
-              <strong>Уровень силы:</strong> {STRENGTH_LABELS[result().strength]} ({result().strength}/4)
+            <strong>ВЕРДИКТ СИСТЕМЫ БЕЗОПАСНОСТИ</strong>
+            <div style="margin-top: 8px; font-size: 15px;">
+              {status() === "OK" ? "✅ Пароль соответствует стандарту безопасности" : 
+               status() === "WARN" ? "⚠️ Обнаружены предупреждения безопасности" : 
+               "❌ Пароль НЕ соответствует стандарту безопасности"}
             </div>
           </div>
 
-          {/* Классы символов */}
+          {/* 📈 ОСНОВНЫЕ МЕТРИКИ */}
           <div class="section">
-            <div class="section-title">Используемые символы:</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <span style={`padding: 4px 8px; border-radius: 4px; font-size: 12px; ${
-                result().classes.lower ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'
-              }`}>
-                {result().classes.lower ? "✓" : "✗"} Строчные
+            <div class="section-title">📈 Технические показатели</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="metric">
+                <strong>📏 Длина:</strong><br/>
+                <span style="font-size: 18px; color: var(--primary-blue);">{result().length}</span> символов
+              </div>
+              <div class="metric">
+                <strong>⚡ Энтропия:</strong><br/>
+                <span style="font-size: 18px; color: var(--success-green);">{result().entropy_bits}</span> бит
+              </div>
+            </div>
+            <div class="metric" style="text-align: center; margin-top: 12px;">
+              <strong>🏆 Уровень силы:</strong><br/>
+              <span style={`
+                font-size: 20px; 
+                font-weight: 700;
+                color: ${result().strength >= 3 ? 'var(--success-green)' : 
+                        result().strength >= 2 ? 'var(--warning-orange)' : 'var(--danger-red)'};
+              `}>
+                {STRENGTH_LABELS[result().strength]} ({result().strength}/4)
               </span>
-              <span style={`padding: 4px 8px; border-radius: 4px; font-size: 12px; ${
-                result().classes.upper ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'
-              }`}>
-                {result().classes.upper ? "✓" : "✗"} Заглавные
-              </span>
-              <span style={`padding: 4px 8px; border-radius: 4px; font-size: 12px; ${
-                result().classes.digits ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'
-              }`}>
-                {result().classes.digits ? "✓" : "✗"} Цифры
-              </span>
-              <span style={`padding: 4px 8px; border-radius: 4px; font-size: 12px; ${
-                result().classes.special ? 'background: #d4edda; color: #155724;' : 'background: #f8d7da; color: #721c24;'
-              }`}>
-                {result().classes.special ? "✓" : "✗"} Спецсимволы
-              </span>
+            </div>
+          </div>
+
+          {/* 🔤 КЛАССЫ СИМВОЛОВ */}
+          <div class="section">
+            <div class="section-title">🔤 Анализ символов</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class={`chip ${result().classes.lower ? 'chip-success' : 'chip-danger'}`}>
+                {result().classes.lower ? "✅" : "❌"} Строчные буквы
+              </div>
+              <div class={`chip ${result().classes.upper ? 'chip-success' : 'chip-danger'}`}>
+                {result().classes.upper ? "✅" : "❌"} Заглавные буквы
+              </div>
+              <div class={`chip ${result().classes.digits ? 'chip-success' : 'chip-danger'}`}>
+                {result().classes.digits ? "✅" : "❌"} Цифры
+              </div>
+              <div class={`chip ${result().classes.special ? 'chip-success' : 'chip-danger'}`}>
+                {result().classes.special ? "✅" : "❌"} Спецсимволы
+              </div>
             </div>
           </div>
 
@@ -424,20 +489,50 @@ export default function App() {
             </div>
           )}
 
-          {/* Кнопки экспорта */}
-          <div class="export-buttons">
-            <button class="btn btn-secondary" onClick={handleExportJSON}>
-              📄 JSON
-            </button>
-            <button class="btn btn-primary" onClick={handleExportPDF}>
-              📄 PDF
-            </button>
+          {/* 📊 ЭКСПОРТ ОТЧЕТОВ */}
+          <div class="section">
+            <div class="section-title">📊 Экспорт профессиональных отчетов</div>
+            <div class="export-buttons">
+              <button class="btn btn-secondary" onClick={handleExportJSON}>
+                📊 JSON Отчет
+                <div style="font-size: 11px; opacity: 0.8;">Данные для анализа</div>
+              </button>
+              <button class="btn btn-primary" onClick={handleExportPDF}>
+                📋 PDF Отчет
+                <div style="font-size: 11px; opacity: 0.8;">Полный анализ</div>
+              </button>
+            </div>
           </div>
 
-          {/* Информация о приватности */}
-          <div style="margin-top: 16px; padding: 12px; background: #e7f3ff; border-radius: 8px; font-size: 12px; color: #0c5460;">
-            🔒 <strong>Приватность:</strong> Ваш пароль анализируется только локально в браузере. 
-            Никакие данные не передаются по сети и не сохраняются на сервере.
+          {/* 🔒 ИНФОРМАЦИЯ О БЕЗОПАСНОСТИ */}
+          <div class="section" style="
+            background: linear-gradient(135deg, rgba(0, 200, 81, 0.1), rgba(0, 200, 81, 0.05));
+            border: 2px solid rgba(0, 200, 81, 0.3);
+          ">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="
+                background: var(--gradient-matrix);
+                color: white;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                flex-shrink: 0;
+              ">
+                🔒
+              </div>
+              <div>
+                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                  🛡️ Гарантия конфиденциальности
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+                  Весь анализ выполняется локально в вашем браузере. Пароли не передаются по сети и не сохраняются на серверах.
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}

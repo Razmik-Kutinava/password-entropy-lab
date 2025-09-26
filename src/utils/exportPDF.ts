@@ -1,5 +1,19 @@
 // /src/utils/exportPDF.ts
-import type { Assessment } from "../core/assessPassword";
+import type { Assessment, Policy } from "../core/assessPassword";
+
+// Интерфейс для расширенного отчета
+interface ExtendedAssessment extends Assessment {
+  all_policies_analysis?: Record<string, Assessment>;
+  selected_policy?: Policy;
+  analysis_timestamp?: string;
+  report_type?: string;
+  policies_summary?: Array<{
+    name: string;
+    display_name: string;
+    category: string;
+    compliance_status: string;
+  }>;
+}
 
 // Функция транслитерации для максимальной совместимости
 function transliterate(text: string): string {
@@ -86,7 +100,7 @@ export async function exportPDFAlternative(assessment: Assessment): Promise<void
 }
 
 // Основной экспорт PDF через pdf-lib
-export async function exportPDF(assessment: Assessment): Promise<void> {
+export async function exportPDF(assessment: ExtendedAssessment): Promise<void> {
   try {
     // Динамический импорт pdf-lib
     const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
@@ -212,10 +226,38 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
       });
     }
 
+    // АНАЛИЗ ПО ВСЕМ ПОЛИТИКАМ (если доступен)
+    if (assessment.all_policies_analysis) {
+      drawText("СРАВНИТЕЛЬНЫЙ АНАЛИЗ ПО СТАНДАРТАМ", 14, true, rgb(0.3, 0.3, 0.3));
+      y -= 5;
+      
+      const policies = Object.entries(assessment.all_policies_analysis);
+      for (const [policyName, policyResult] of policies) {
+        const policy = assessment.selected_policy || { display_name: policyName, icon: "🔒" };
+        const passCount = policyResult.compliance.filter(c => c.status === "PASS").length;
+        const totalCount = policyResult.compliance.length;
+        const status = passCount === totalCount ? "PASS" : passCount > totalCount * 0.7 ? "WARN" : "FAIL";
+        const statusColor = status === "PASS" ? rgb(0, 0.6, 0) : status === "WARN" ? rgb(0.8, 0.6, 0) : rgb(0.8, 0, 0);
+        
+        drawText(`${status}: ${policyName} (${passCount}/${totalCount} требований)`, 10, false, statusColor);
+        
+        // Проверяем, не выходим ли за пределы страницы
+        if (y < 100) {
+          // Добавляем новую страницу
+          const newPage = pdfDoc.addPage([595, 842]);
+          y = newPage.getSize().height - 60;
+        }
+      }
+      y -= 10;
+    }
+
     // Подвал
-    y = 50;
+    if (y < 100) y = 100; // Минимальная позиция для подвала
     drawText("Сгенерировано Password & Entropy Lab", 8, false, rgb(0.7, 0.7, 0.7));
     drawText("Все данные обработаны локально", 8, false, rgb(0.7, 0.7, 0.7));
+    if (assessment.analysis_timestamp) {
+      drawText(`Создан: ${new Date(assessment.analysis_timestamp).toLocaleString('ru-RU')}`, 8, false, rgb(0.7, 0.7, 0.7));
+    }
 
     // Сохранение PDF
     const pdfBytes = await pdfDoc.save();
@@ -369,7 +411,7 @@ function generatePDFHTML(assessment: Assessment): string {
   `;
 }
 
-export function exportJSON(assessment: Assessment): void {
+export function exportJSON(assessment: ExtendedAssessment): void {
   try {
     // Создаем полностью транслитерированную копию объекта
     const cleanAssessment = JSON.parse(JSON.stringify(assessment, (key, value) => {

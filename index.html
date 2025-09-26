@@ -6,93 +6,331 @@
   <title>Password & Entropy Lab</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    /* 🔥 СОВРЕМЕННЫЙ ИНФОБЕЗ ДИЗАЙН */
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --primary-blue: #0066cc;
+      --success-green: #00c851;
+      --warning-orange: #ff8800;
+      --danger-red: #ff4444;
+      --dark-bg: #0a0e1a;
+      --card-bg: #1a1f2e;
+      --border-color: #2d3748;
+      --text-primary: #ffffff;
+      --text-secondary: #a0aec0;
+      --gradient-cyber: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-matrix: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
+      --shadow-cyber: 0 8px 32px rgba(102, 126, 234, 0.3);
+      --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #000000);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--tg-theme-bg-color, var(--dark-bg));
+      color: var(--tg-theme-text-color, var(--text-primary));
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 25% 25%, rgba(0, 200, 81, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
     }
     
     .container {
-      max-width: 400px;
+      max-width: 420px;
       margin: 0 auto;
-      padding: 16px;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* 🎯 ЗАГОЛОВОК */
+    .app-header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding: 24px;
+      background: var(--gradient-cyber);
+      border-radius: 20px;
+      box-shadow: var(--shadow-cyber);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .app-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: -0.5px;
+    }
+
+    .app-subtitle {
+      font-size: 14px;
+      margin: 8px 0 0 0;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    /* 🛡️ СЕЛЕКТОР ПОЛИТИК */
+    .policy-selector {
+      margin-bottom: 24px;
+      background: var(--tg-theme-secondary-bg-color, var(--card-bg));
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .policy-selector-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .policy-label {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .policy-current {
+      background: var(--gradient-matrix);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .policy-current:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+    }
+
+    /* 📱 ПОЛЕ ВВОДА */
+    .input-container {
+      position: relative;
+      margin-bottom: 24px;
     }
     
     .input-field {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      padding: 16px 60px 16px 20px;
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
       font-size: 16px;
-      margin-bottom: 16px;
-      box-sizing: border-box;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--tg-theme-secondary-bg-color, var(--card-bg));
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2), 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .input-field::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .password-toggle:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* 📊 СТАТУСЫ */
+    .status-ok { 
+      background: linear-gradient(135deg, #00c851, #00ff88);
+      color: white;
+      border: 1px solid rgba(0, 255, 136, 0.3);
     }
     
-    .status-ok { background: #d4edda; color: #155724; }
-    .status-warn { background: #fff3cd; color: #856404; }
-    .status-fail { background: #f8d7da; color: #721c24; }
+    .status-warn { 
+      background: linear-gradient(135deg, #ff8800, #ffbb33);
+      color: white;
+      border: 1px solid rgba(255, 136, 0, 0.3);
+    }
+    
+    .status-fail { 
+      background: linear-gradient(135deg, #ff4444, #ff6b6b);
+      color: white;
+      border: 1px solid rgba(255, 68, 68, 0.3);
+    }
     
     .status-card {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-weight: bold;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      font-size: 16px;
     }
-    
-    .metric {
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-    
+
+    /* 📋 СЕКЦИИ */
     .section {
-      margin-bottom: 16px;
+      background: var(--tg-theme-secondary-bg-color, var(--card-bg));
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
     
     .section-title {
-      font-weight: bold;
-      margin-bottom: 8px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    .issue-list, .suggestion-list {
-      list-style: disc;
-      padding-left: 20px;
-      margin: 0;
+    .metric {
+      margin-bottom: 12px;
+      font-size: 15px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-blue);
     }
-    
-    .issue-list li, .suggestion-list li {
-      margin-bottom: 4px;
-      font-size: 14px;
+
+    /* 🎨 ЧИПЫ */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px;
+      transition: all 0.2s ease;
     }
-    
+
+    .chip-success {
+      background: rgba(0, 200, 81, 0.2);
+      color: #00ff88;
+      border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+
+    .chip-danger {
+      background: rgba(255, 68, 68, 0.2);
+      color: #ff6b6b;
+      border: 1px solid rgba(255, 68, 68, 0.3);
+    }
+
+    /* 📄 КНОПКИ ЭКСПОРТА */
     .export-buttons {
       display: flex;
-      gap: 8px;
-      margin-top: 20px;
+      gap: 12px;
+      margin-top: 32px;
     }
     
     .btn {
-      padding: 10px 16px;
+      padding: 16px 24px;
       border: none;
-      border-radius: 8px;
+      border-radius: 16px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 600;
       flex: 1;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     
     .btn-primary {
-      background: #007bff;
+      background: var(--gradient-cyber);
       color: white;
+      box-shadow: var(--shadow-cyber);
     }
     
     .btn-secondary {
-      background: #6c757d;
+      background: var(--gradient-matrix);
       color: white;
+      box-shadow: var(--shadow-glow);
     }
     
     .btn:hover {
-      opacity: 0.8;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary:hover {
+      box-shadow: 0 8px 32px rgba(0, 255, 136, 0.4);
+    }
+
+    /* 📱 АДАПТИВНОСТЬ */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px;
+      }
+      
+      .app-title {
+        font-size: 20px;
+      }
+      
+      .export-buttons {
+        flex-direction: column;
+      }
+    }
+
+    /* 🔄 АНИМАЦИИ */
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.8); }
+    }
+
+    .glow-animation {
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    /* 🎯 СКРОЛЛБАР */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--card-bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary-blue);
+      border-radius: 4px;
     }
   </style>
 </head>

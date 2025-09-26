@@ -280,6 +280,17 @@ function generateFixSuggestions(
   return suggestions;
 }
 
+// Функция для проверки пароля по всем политикам
+export function assessPasswordAllPolicies(password: string): Record<string, Assessment> {
+  const results: Record<string, Assessment> = {};
+  
+  for (const policy of ALL_POLICIES) {
+    results[policy.name] = assessPassword(password, policy);
+  }
+  
+  return results;
+}
+
 export function assessPassword(password: string, policy: Policy = NIST_MODERATE): Assessment {
   // Маскированная версия для отображения
   const masked = "•".repeat(Math.min(password.length, 50));
