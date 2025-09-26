@@ -44,6 +44,7 @@ declare global {
         viewportStableHeight: number;
         showAlert?(message: string): void;
         showPopup?(params: any): void;
+        openLink?(url: string): void;
       };
     };
   }
@@ -197,7 +198,12 @@ export default function App() {
               const webUrl = 'https://password-entropy-lab-production.up.railway.app/';
               if (typeof window.Telegram?.WebApp !== "undefined") {
                 // В Telegram Mini App - открываем в браузере
-                window.Telegram.WebApp.openLink(webUrl);
+                if (window.Telegram.WebApp.openLink) {
+                  window.Telegram.WebApp.openLink(webUrl);
+                } else {
+                  // Fallback для старых версий
+                  window.open(webUrl, '_blank');
+                }
               } else {
                 // В обычном браузере - открываем в новой вкладке
                 window.open(webUrl, '_blank');
