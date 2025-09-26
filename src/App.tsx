@@ -157,7 +157,20 @@ export default function App() {
         all_policies_analysis: allResults,
         selected_policy: selectedPolicy(),
         analysis_timestamp: new Date().toISOString(),
-        report_type: "COMPREHENSIVE_SECURITY_ANALYSIS"
+        report_type: "COMPREHENSIVE_SECURITY_ANALYSIS",
+        summary: {
+          total_policies: ALL_POLICIES.length,
+          passed_policies: Object.values(allResults).filter(r => 
+            r.compliance.every(c => c.status === "PASS")
+          ).length,
+          failed_policies: Object.values(allResults).filter(r => 
+            r.compliance.some(c => c.status === "FAIL")
+          ).length,
+          warning_policies: Object.values(allResults).filter(r => 
+            r.compliance.some(c => c.status === "WARN") && 
+            !r.compliance.some(c => c.status === "FAIL")
+          ).length
+        }
       };
       
       exportPDF(extendedReport).catch(error => {
@@ -402,11 +415,11 @@ export default function App() {
           <div class="section">
             <div class="section-title">📈 Технические показатели</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="metric">
+            <div class="metric">
                 <strong>📏 Длина:</strong><br/>
                 <span style="font-size: 18px; color: var(--primary-blue);">{result().length}</span> символов
-              </div>
-              <div class="metric">
+            </div>
+            <div class="metric">
                 <strong>⚡ Энтропия:</strong><br/>
                 <span style="font-size: 18px; color: var(--success-green);">{result().entropy_bits}</span> бит
               </div>
@@ -443,16 +456,42 @@ export default function App() {
             </div>
           </div>
 
-          {/* Соответствие политике */}
+          {/* 📋 ДЕТАЛЬНОЕ СООТВЕТСТВИЕ ПОЛИТИКЕ */}
           <div class="section">
-            <div class="section-title">Соответствие политике NIST:</div>
+            <div class="section-title">📋 Соответствие стандарту {selectedPolicy().display_name}:</div>
             <For each={result().compliance}>
               {(rule) => (
-                <div style={`font-size: 14px; margin-bottom: 4px; ${
-                  rule.status === "PASS" ? "color: #155724;" : 
-                  rule.status === "WARN" ? "color: #856404;" : "color: #721c24;"
-                }`}>
-                  {rule.status === "PASS" ? "✅" : rule.status === "WARN" ? "⚠️" : "❌"} {rule.rule}
+                <div style={`
+                  background: ${rule.status === "PASS" ? "rgba(0, 200, 81, 0.1)" : 
+                              rule.status === "WARN" ? "rgba(255, 187, 51, 0.1)" : "rgba(255, 68, 68, 0.1)"};
+                  border: 1px solid ${rule.status === "PASS" ? "rgba(0, 200, 81, 0.3)" : 
+                              rule.status === "WARN" ? "rgba(255, 187, 51, 0.3)" : "rgba(255, 68, 68, 0.3)"};
+                  border-radius: 12px;
+                  padding: 12px;
+                  margin-bottom: 8px;
+                `}>
+                  <div style={`
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 600;
+                    color: ${rule.status === "PASS" ? "var(--success-green)" : 
+                            rule.status === "WARN" ? "var(--warning-orange)" : "var(--danger-red)"};
+                    margin-bottom: 4px;
+                  `}>
+                    {rule.status === "PASS" ? "✅" : rule.status === "WARN" ? "⚠️" : "❌"} 
+                    {rule.rule}
+                  </div>
+                  {rule.details && (
+                    <div style={`
+                      font-size: 12px;
+                      color: var(--text-secondary);
+                      margin-left: 24px;
+                      font-style: italic;
+                    `}>
+                      💡 {rule.details}
+                    </div>
+                  )}
                 </div>
               )}
             </For>
@@ -492,15 +531,15 @@ export default function App() {
           {/* 📊 ЭКСПОРТ ОТЧЕТОВ */}
           <div class="section">
             <div class="section-title">📊 Экспорт профессиональных отчетов</div>
-            <div class="export-buttons">
-              <button class="btn btn-secondary" onClick={handleExportJSON}>
+          <div class="export-buttons">
+            <button class="btn btn-secondary" onClick={handleExportJSON}>
                 📊 JSON Отчет
                 <div style="font-size: 11px; opacity: 0.8;">Данные для анализа</div>
-              </button>
-              <button class="btn btn-primary" onClick={handleExportPDF}>
+            </button>
+            <button class="btn btn-primary" onClick={handleExportPDF}>
                 📋 PDF Отчет
                 <div style="font-size: 11px; opacity: 0.8;">Полный анализ</div>
-              </button>
+            </button>
             </div>
           </div>
 

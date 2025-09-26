@@ -7,6 +7,12 @@ interface ExtendedAssessment extends Assessment {
   selected_policy?: Policy;
   analysis_timestamp?: string;
   report_type?: string;
+  summary?: {
+    total_policies: number;
+    passed_policies: number;
+    failed_policies: number;
+    warning_policies: number;
+  };
   policies_summary?: Array<{
     name: string;
     display_name: string;
@@ -226,23 +232,55 @@ export async function exportPDF(assessment: ExtendedAssessment): Promise<void> {
       });
     }
 
-    // АНАЛИЗ ПО ВСЕМ ПОЛИТИКАМ (если доступен)
+    // СВОДКА ПО ВСЕМ ПОЛИТИКАМ (если доступна)
+    if (assessment.summary) {
+      drawText("СВОДКА ПО ВСЕМ СТАНДАРТАМ БЕЗОПАСНОСТИ", 14, true, rgb(0.3, 0.3, 0.3));
+      y -= 5;
+      
+      const summary = assessment.summary;
+      drawText(`Всего стандартов: ${summary.total_policies}`, 10, false, rgb(0.3, 0.3, 0.3));
+      drawText(`✅ Соответствует: ${summary.passed_policies}`, 10, false, rgb(0, 0.6, 0));
+      drawText(`⚠️ Предупреждения: ${summary.warning_policies}`, 10, false, rgb(0.8, 0.6, 0));
+      drawText(`❌ Не соответствует: ${summary.failed_policies}`, 10, false, rgb(0.8, 0, 0));
+      y -= 10;
+    }
+
+    // ДЕТАЛЬНЫЙ АНАЛИЗ ПО ВСЕМ ПОЛИТИКАМ (если доступен)
     if (assessment.all_policies_analysis) {
-      drawText("СРАВНИТЕЛЬНЫЙ АНАЛИЗ ПО СТАНДАРТАМ", 14, true, rgb(0.3, 0.3, 0.3));
+      drawText("ДЕТАЛЬНЫЙ АНАЛИЗ ПО СТАНДАРТАМ", 14, true, rgb(0.3, 0.3, 0.3));
       y -= 5;
       
       const policies = Object.entries(assessment.all_policies_analysis);
       for (const [policyName, policyResult] of policies) {
-        const policy = assessment.selected_policy || { display_name: policyName, icon: "🔒" };
         const passCount = policyResult.compliance.filter(c => c.status === "PASS").length;
+        const warnCount = policyResult.compliance.filter(c => c.status === "WARN").length;
+        const failCount = policyResult.compliance.filter(c => c.status === "FAIL").length;
         const totalCount = policyResult.compliance.length;
-        const status = passCount === totalCount ? "PASS" : passCount > totalCount * 0.7 ? "WARN" : "FAIL";
+        
+        const status = failCount > 0 ? "FAIL" : warnCount > 0 ? "WARN" : "PASS";
         const statusColor = status === "PASS" ? rgb(0, 0.6, 0) : status === "WARN" ? rgb(0.8, 0.6, 0) : rgb(0.8, 0, 0);
         
-        drawText(`${status}: ${policyName} (${passCount}/${totalCount} требований)`, 10, false, statusColor);
+        drawText(`${status}: ${policyName}`, 12, true, statusColor);
+        drawText(`  ✅ ${passCount} | ⚠️ ${warnCount} | ❌ ${failCount} из ${totalCount} требований`, 9, false, rgb(0.5, 0.5, 0.5));
+        
+        // Показываем детали для неудачных проверок
+        if (failCount > 0 || warnCount > 0) {
+          const failedRules = policyResult.compliance.filter(c => c.status === "FAIL" || c.status === "WARN");
+          for (const rule of failedRules.slice(0, 3)) { // Показываем максимум 3 правила
+            drawText(`    • ${rule.rule}`, 8, false, rule.status === "FAIL" ? rgb(0.8, 0, 0) : rgb(0.8, 0.6, 0));
+            if (rule.details) {
+              drawText(`      ${rule.details}`, 7, false, rgb(0.6, 0.6, 0.6));
+            }
+          }
+          if (failedRules.length > 3) {
+            drawText(`    ... и еще ${failedRules.length - 3} требований`, 8, false, rgb(0.6, 0.6, 0.6));
+          }
+        }
+        
+        y -= 5;
         
         // Проверяем, не выходим ли за пределы страницы
-        if (y < 100) {
+        if (y < 150) {
           // Добавляем новую страницу
           const newPage = pdfDoc.addPage([595, 842]);
           y = newPage.getSize().height - 60;

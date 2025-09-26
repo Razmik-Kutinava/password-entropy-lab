@@ -18,7 +18,7 @@ export interface Assessment {
   strength: StrengthLevel;
   patterns: string[];
   dictionary_hits: { word: string; dict: string }[];
-  compliance: { rule: string; status: "PASS" | "WARN" | "FAIL" }[];
+  compliance: { rule: string; status: "PASS" | "WARN" | "FAIL"; details?: string }[];
   fix_suggestions: string[];
   policy_name: string;
   timestamp: string;
@@ -280,6 +280,219 @@ function generateFixSuggestions(
   return suggestions;
 }
 
+// Детальная проверка соответствия конкретной политике
+function checkPolicyCompliance(password: string, policy: Policy): { rule: string; status: "PASS" | "WARN" | "FAIL"; details?: string }[] {
+  const compliance: { rule: string; status: "PASS" | "WARN" | "FAIL"; details?: string }[] = [];
+  const length = password.length;
+  
+  // 1. Проверка минимальной длины
+  compliance.push({
+    rule: `Минимальная длина: ${policy.min_length} символов`,
+    status: length >= policy.min_length ? "PASS" : "FAIL",
+    details: length >= policy.min_length ? 
+      `Текущая длина: ${length} символов` : 
+      `Недостаточно символов: ${length}/${policy.min_length}`
+  });
+
+  // 2. Проверка максимальной длины (если указана)
+  if (policy.max_length) {
+    compliance.push({
+      rule: `Максимальная длина: ${policy.max_length} символов`,
+      status: length <= policy.max_length ? "PASS" : "WARN",
+      details: length <= policy.max_length ? 
+        `Длина в пределах: ${length} символов` : 
+        `Превышена максимальная длина: ${length}/${policy.max_length}`
+    });
+  }
+
+  // 3. Проверка классов символов
+  const classes = {
+    lower: /[a-zа-яё]/.test(password),
+    upper: /[A-ZА-ЯЁ]/.test(password),
+    digits: /\d/.test(password),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password),
+  };
+
+  const classCount = Object.values(classes).filter(Boolean).length;
+  
+  if (policy.require_classes_if_short && length < 16) {
+    compliance.push({
+      rule: "Разнообразие символов (минимум 3 класса)",
+      status: classCount >= 3 ? "PASS" : classCount >= 2 ? "WARN" : "FAIL",
+      details: `Используется ${classCount} классов: ${
+        classes.lower ? "строчные " : ""
+      }${classes.upper ? "заглавные " : ""
+      }${classes.digits ? "цифры " : ""
+      }${classes.special ? "спецсимволы" : ""}`
+    });
+  }
+
+  // 4. Проверка энтропии
+  const entropy_bits = estimateEntropy(password, classes, detectPatterns(password), checkTopPasswords(password));
+  const minEntropy = policy.min_entropy || 30;
+  
+  compliance.push({
+    rule: `Минимальная энтропия: ${minEntropy} бит`,
+    status: entropy_bits >= minEntropy ? "PASS" : entropy_bits >= (minEntropy - 10) ? "WARN" : "FAIL",
+    details: `Текущая энтропия: ${entropy_bits.toFixed(1)} бит`
+  });
+
+  // 5. Проверка популярных паролей
+  const dictionary_hits = checkTopPasswords(password);
+  compliance.push({
+    rule: "Отсутствие популярных паролей",
+    status: dictionary_hits.length === 0 ? "PASS" : "FAIL",
+    details: dictionary_hits.length === 0 ? 
+      "Пароль не найден в словарях" : 
+      `Найдено в словарях: ${dictionary_hits.map(h => h.word).join(", ")}`
+  });
+
+  // 6. Специальные требования политики
+  if (policy.special_requirements) {
+    for (const req of policy.special_requirements) {
+      let status: "PASS" | "WARN" | "FAIL" = "PASS";
+      let details = "Требование выполнено";
+      
+      switch (req) {
+        case "no_sequential_chars":
+          const hasSequential = /(abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|123|234|345|456|567|678|789|890|qwe|wer|ert|rty|tyu|yui|uio|iop|asd|sdf|dfg|fgh|ghj|hjk|jkl|zxc|xcv|cvb|vbn|bnm)/i.test(password);
+          status = hasSequential ? "FAIL" : "PASS";
+          details = hasSequential ? "Обнаружены последовательные символы" : "Последовательности не найдены";
+          break;
+          
+        case "no_personal_info":
+          // Простая проверка на даты и имена
+          const hasPersonalInfo = /(19|20)\d{2}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(password);
+          status = hasPersonalInfo ? "WARN" : "PASS";
+          details = hasPersonalInfo ? "Возможно содержит персональную информацию" : "Персональная информация не обнаружена";
+          break;
+          
+        case "quarterly_change":
+          status = "PASS"; // Это требование к процессу, не к паролю
+          details = "Рекомендуется смена каждые 3 месяца";
+          break;
+          
+        case "no_reuse_last_4":
+          status = "PASS"; // Это требование к системе, не к паролю
+          details = "Не повторять последние 4 пароля";
+          break;
+          
+        case "complexity_requirements":
+          status = classCount >= 3 ? "PASS" : "WARN";
+          details = `Сложность: ${classCount}/4 классов символов`;
+          break;
+          
+        case "account_lockout_protection":
+          status = "PASS"; // Это требование к системе
+          details = "Защита от блокировки аккаунта";
+          break;
+          
+        case "2fa_required":
+          status = "PASS"; // Это требование к процессу
+          details = "Двухфакторная аутентификация обязательна";
+          break;
+          
+        case "session_management":
+          status = "PASS"; // Это требование к системе
+          details = "Управление сессиями";
+          break;
+          
+        case "no_dictionary_words":
+          const hasDictionaryWords = dictionary_hits.length > 0;
+          status = hasDictionaryWords ? "FAIL" : "PASS";
+          details = hasDictionaryWords ? "Содержит словарные слова" : "Словарные слова не найдены";
+          break;
+          
+        case "regular_rotation":
+          status = "PASS"; // Это требование к процессу
+          details = "Регулярная смена пароля";
+          break;
+          
+        case "multi_factor_auth":
+          status = "PASS"; // Это требование к процессу
+          details = "Многофакторная аутентификация";
+          break;
+          
+        case "transaction_signing":
+          status = "PASS"; // Это требование к системе
+          details = "Подпись транзакций";
+          break;
+          
+        case "time_based_tokens":
+          status = "PASS"; // Это требование к системе
+          details = "Временные токены";
+          break;
+          
+        case "fraud_detection":
+          status = "PASS"; // Это требование к системе
+          details = "Обнаружение мошенничества";
+          break;
+          
+        case "audit_trail":
+          status = "PASS"; // Это требование к системе
+          details = "Аудиторский след";
+          break;
+          
+        case "risk_assessment":
+          status = "PASS"; // Это требование к процессу
+          details = "Оценка рисков";
+          break;
+          
+        case "incident_response":
+          status = "PASS"; // Это требование к процессу
+          details = "Реагирование на инциденты";
+          break;
+          
+        case "data_portability":
+          status = "PASS"; // Это требование к системе
+          details = "Переносимость данных";
+          break;
+          
+        case "right_to_erasure":
+          status = "PASS"; // Это требование к системе
+          details = "Право на удаление";
+          break;
+          
+        case "consent_management":
+          status = "PASS"; // Это требование к системе
+          details = "Управление согласиями";
+          break;
+      }
+      
+      const reqDescriptions: Record<string, string> = {
+        "no_sequential_chars": "Отсутствие последовательных символов",
+        "no_personal_info": "Отсутствие персональной информации",
+        "quarterly_change": "Смена пароля каждые 3 месяца",
+        "no_reuse_last_4": "Не повторять последние 4 пароля",
+        "complexity_requirements": "Требования сложности",
+        "account_lockout_protection": "Защита от блокировки аккаунта",
+        "2fa_required": "Двухфакторная аутентификация",
+        "session_management": "Управление сессиями",
+        "no_dictionary_words": "Отсутствие словарных слов",
+        "regular_rotation": "Регулярная смена пароля",
+        "multi_factor_auth": "Многофакторная аутентификация",
+        "transaction_signing": "Подпись транзакций",
+        "time_based_tokens": "Временные токены",
+        "fraud_detection": "Обнаружение мошенничества",
+        "audit_trail": "Аудиторский след",
+        "risk_assessment": "Оценка рисков",
+        "incident_response": "Реагирование на инциденты",
+        "data_portability": "Переносимость данных",
+        "right_to_erasure": "Право на удаление",
+        "consent_management": "Управление согласиями",
+      };
+      
+      compliance.push({
+        rule: reqDescriptions[req] || req,
+        status,
+        details
+      });
+    }
+  }
+
+  return compliance;
+}
+
 // Функция для проверки пароля по всем политикам
 export function assessPasswordAllPolicies(password: string): Record<string, Assessment> {
   const results: Record<string, Assessment> = {};
@@ -316,74 +529,8 @@ export function assessPassword(password: string, policy: Policy = NIST_MODERATE)
   // Определение уровня силы
   const strength = getStrengthLevel(entropy_bits, length);
 
-  // Проверка соответствия политике
-  const compliance: { rule: string; status: "PASS" | "WARN" | "FAIL" }[] = [
-    {
-      rule: `Минимальная длина: ${policy.min_length} символов`,
-      status: length >= policy.min_length ? "PASS" : "FAIL"
-    },
-    {
-      rule: "Отсутствие популярных паролей", 
-      status: dictionary_hits.length === 0 ? "PASS" : "FAIL"
-    }
-  ];
-
-  // Проверка максимальной длины (если указана)
-  if (policy.max_length) {
-    compliance.push({
-      rule: `Максимальная длина: ${policy.max_length} символов`,
-      status: length <= policy.max_length ? "PASS" : "WARN"
-    });
-  }
-
-  // Проверка энтропии (если указана минимальная)
-  const minEntropy = policy.min_entropy || 30;
-  compliance.push({
-    rule: `Энтропия: минимум ${minEntropy} бит`,
-    status: entropy_bits >= minEntropy ? "PASS" : entropy_bits >= (minEntropy - 10) ? "WARN" : "FAIL"
-  });
-
-  // Специальные требования политики
-  if (policy.special_requirements) {
-    for (const req of policy.special_requirements) {
-      const reqDescriptions: Record<string, string> = {
-        "no_sequential_chars": "Отсутствие последовательных символов",
-        "no_personal_info": "Отсутствие персональной информации",
-        "quarterly_change": "Смена пароля каждые 3 месяца",
-        "no_reuse_last_4": "Не повторять последние 4 пароля",
-        "complexity_requirements": "Требования сложности",
-        "account_lockout_protection": "Защита от блокировки аккаунта",
-        "2fa_required": "Двухфакторная аутентификация",
-        "session_management": "Управление сессиями",
-        "no_dictionary_words": "Отсутствие словарных слов",
-        "regular_rotation": "Регулярная смена пароля",
-        "multi_factor_auth": "Многофакторная аутентификация",
-        "transaction_signing": "Подпись транзакций",
-        "time_based_tokens": "Временные токены",
-        "fraud_detection": "Обнаружение мошенничества",
-        "audit_trail": "Аудиторский след",
-        "risk_assessment": "Оценка рисков",
-        "incident_response": "Реагирование на инциденты",
-        "data_portability": "Переносимость данных",
-        "right_to_erasure": "Право на удаление",
-        "consent_management": "Управление согласиями",
-      };
-      
-      compliance.push({
-        rule: reqDescriptions[req] || req,
-        status: "PASS" // Базовая реализация - все специальные требования считаем выполненными
-      });
-    }
-  }
-
-  // Дополнительная проверка на классы символов для коротких паролей
-  if (length < 16 && policy.require_classes_if_short) {
-    const classCount = Object.values(classes).filter(Boolean).length;
-    compliance.push({
-      rule: "character_classes>=3",
-      status: classCount >= 3 ? "PASS" : "WARN"
-    });
-  }
+  // Используем детальную проверку соответствия политике
+  const compliance = checkPolicyCompliance(password, policy);
 
   // Генерация рекомендаций
   const fix_suggestions = generateFixSuggestions(password, patterns, dictionary_hits, classes, policy);
