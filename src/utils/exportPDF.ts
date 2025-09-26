@@ -104,10 +104,13 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
 
     const drawText = (text: string, size = 12, bold = false, color = rgb(0, 0, 0)) => {
       try {
-        // Принудительно транслитерируем весь текст в ASCII
-        const asciiText = transliterate(text);
+        // Для PDF оставляем кириллицу, но очищаем проблемные символы
+        const cleanText = text
+          .replace(/[—–]/g, '-')  // Заменяем длинные тире
+          .replace(/[«»]/g, '"')  // Заменяем кавычки-елочки
+          .replace(/['']/g, "'"); // Заменяем фигурные апострофы
         
-        page.drawText(asciiText, {
+        page.drawText(cleanText, {
           x: margin,
           y,
           size,
@@ -116,10 +119,10 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
           maxWidth: width - 2 * margin
         });
       } catch (error) {
-        console.warn('Ошибка отрисовки текста:', text, error);
-        // Супер-fallback - только базовые символы
-        const ultraSafeText = text.replace(/[^\x20-\x7E]/g, '?');
-        page.drawText(ultraSafeText, {
+        console.warn('Ошибка отрисовки текста, используем транслитерацию:', text, error);
+        // Fallback - транслитерация только при ошибке
+        const fallbackText = transliterate(text);
+        page.drawText(fallbackText, {
           x: margin,
           y,
           size,
@@ -132,69 +135,68 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
     };
 
     // Заголовок
-    drawText("Password & Entropy Lab - Otchet analiza", 18, true, rgb(0.2, 0.2, 0.8));
+    drawText("Password & Entropy Lab — Отчёт анализа", 18, true, rgb(0.2, 0.2, 0.8));
     y -= 10;
 
     // Дата
-    const date = new Date(assessment.timestamp).toLocaleString('en-US');
-    drawText(`Data analiza: ${date}`, 10, false, rgb(0.5, 0.5, 0.5));
+    const date = new Date(assessment.timestamp).toLocaleString('ru-RU');
+    drawText(`Дата анализа: ${date}`, 10, false, rgb(0.5, 0.5, 0.5));
     y -= 10;
 
     // Основные метрики
-    drawText("OSNOVNYE POKAZATELI", 14, true, rgb(0.3, 0.3, 0.3));
-    drawText(`Politika: ${transliterate(assessment.policy_name)}`);
-    drawText(`Dlina parolya: ${assessment.length} simvolov`);
-    drawText(`Entropiya: ${assessment.entropy_bits} bit`);
-    drawText(`Uroven sily: ${STRENGTH_LABELS[assessment.strength]} (${assessment.strength}/4)`);
+    drawText("ОСНОВНЫЕ ПОКАЗАТЕЛИ", 14, true, rgb(0.3, 0.3, 0.3));
+    drawText(`Политика: ${assessment.policy_name}`);
+    drawText(`Длина пароля: ${assessment.length} символов`);
+    drawText(`Энтропия: ${assessment.entropy_bits} бит`);
+    drawText(`Уровень силы: ${STRENGTH_LABELS_RU[assessment.strength]} (${assessment.strength}/4)`);
     y -= 10;
 
     // Классы символов
-    drawText("ISPOLZUEMYE SIMVOLY", 14, true, rgb(0.3, 0.3, 0.3));
+    drawText("ИСПОЛЬЗУЕМЫЕ СИМВОЛЫ", 14, true, rgb(0.3, 0.3, 0.3));
     const classLabels = {
-      lower: "Strochnye bukvy",
-      upper: "Zaglavnye bukvy", 
-      digits: "Cifry",
-      special: "Specsimvoly"
+      lower: "Строчные буквы",
+      upper: "Заглавные буквы", 
+      digits: "Цифры",
+      special: "Спецсимволы"
     };
     
     Object.entries(assessment.classes).forEach(([key, value]) => {
-      const status = value ? "+" : "-";
+      const status = value ? "✓" : "✗";
       const color = value ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0);
       drawText(`${status} ${classLabels[key as keyof typeof classLabels]}`, 10, false, color);
     });
     y -= 10;
 
     // Соответствие политике
-    drawText("SOOTVETSTVIE POLITIKE", 14, true, rgb(0.3, 0.3, 0.3));
+    drawText("СООТВЕТСТВИЕ ПОЛИТИКЕ", 14, true, rgb(0.3, 0.3, 0.3));
     assessment.compliance.forEach(rule => {
       const statusColor = rule.status === "PASS" ? rgb(0, 0.6, 0) : 
                          rule.status === "WARN" ? rgb(0.8, 0.6, 0) : rgb(0.8, 0, 0);
-      drawText(`${rule.status}: ${transliterate(rule.rule)}`, 10, false, statusColor);
+      drawText(`${rule.status}: ${rule.rule}`, 10, false, statusColor);
     });
     y -= 10;
 
     // Проблемы
     if (assessment.patterns.length > 0 || assessment.dictionary_hits.length > 0) {
-      drawText("OBNARUZHENNYE PROBLEMY", 14, true, rgb(0.8, 0, 0));
+      drawText("ОБНАРУЖЕННЫЕ ПРОБЛЕМЫ", 14, true, rgb(0.8, 0, 0));
       
       assessment.patterns.forEach(pattern => {
-        const label = PATTERN_LABELS[pattern] || pattern;
+        const label = PATTERN_LABELS_RU[pattern] || pattern;
         drawText(`• ${label}`, 10, false, rgb(0.6, 0, 0));
       });
       
       assessment.dictionary_hits.forEach(hit => {
-        drawText(`• Nayden v slovare: ${transliterate(hit.word)}`, 10, false, rgb(0.6, 0, 0));
+        drawText(`• Найден в словаре: ${hit.word}`, 10, false, rgb(0.6, 0, 0));
       });
       y -= 10;
     }
 
     // Рекомендации
     if (assessment.fix_suggestions.length > 0) {
-      drawText("REKOMENDACII", 14, true, rgb(0, 0.5, 0));
+      drawText("РЕКОМЕНДАЦИИ", 14, true, rgb(0, 0.5, 0));
       assessment.fix_suggestions.forEach(suggestion => {
-        // Транслитерируем и разбиваем длинные строки
-        const transliteratedSuggestion = transliterate(suggestion);
-        const words = transliteratedSuggestion.split(' ');
+        // Разбиваем длинные строки
+        const words = suggestion.split(' ');
         let line = '';
         for (const word of words) {
           if (line.length + word.length > 70) {
@@ -212,8 +214,8 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
 
     // Подвал
     y = 50;
-    drawText("Sgenerirowano Password & Entropy Lab", 8, false, rgb(0.7, 0.7, 0.7));
-    drawText("Vse dannye obrabotany lokalno", 8, false, rgb(0.7, 0.7, 0.7));
+    drawText("Сгенерировано Password & Entropy Lab", 8, false, rgb(0.7, 0.7, 0.7));
+    drawText("Все данные обработаны локально", 8, false, rgb(0.7, 0.7, 0.7));
 
     // Сохранение PDF
     const pdfBytes = await pdfDoc.save();
@@ -263,36 +265,40 @@ function downloadBlob(data: any, filename: string, type: string) {
 // Экспорт как текст (fallback)
 function exportAsText(assessment: Assessment): void {
   const textContent = `
-PASSWORD & ENTROPY LAB - OTCHET ANALIZA
+PASSWORD & ENTROPY LAB - ОТЧЁТ АНАЛИЗА
 
-Data: ${new Date(assessment.timestamp).toLocaleString('en-US')}
-Politika: ${transliterate(assessment.policy_name)}
+Дата: ${new Date(assessment.timestamp).toLocaleString('ru-RU')}
+Политика: ${assessment.policy_name}
 
-OSNOVNYE POKAZATELI:
-• Dlina parolya: ${assessment.length} simvolov
-• Entropiya: ${assessment.entropy_bits} bit
-• Uroven sily: ${STRENGTH_LABELS[assessment.strength]} (${assessment.strength}/4)
+ОСНОВНЫЕ ПОКАЗАТЕЛИ:
+• Длина пароля: ${assessment.length} символов
+• Энтропия: ${assessment.entropy_bits} бит
+• Уровень силы: ${STRENGTH_LABELS_RU[assessment.strength]} (${assessment.strength}/4)
 
-ISPOLZUEMYE SIMVOLY:
-• Strochnye bukvy: ${assessment.classes.lower ? '+' : '-'}
-• Zaglavnye bukvy: ${assessment.classes.upper ? '+' : '-'}
-• Cifry: ${assessment.classes.digits ? '+' : '-'}
-• Specsimvoly: ${assessment.classes.special ? '+' : '-'}
+ИСПОЛЬЗУЕМЫЕ СИМВОЛЫ:
+• Строчные буквы: ${assessment.classes.lower ? '✓' : '✗'}
+• Заглавные буквы: ${assessment.classes.upper ? '✓' : '✗'}
+• Цифры: ${assessment.classes.digits ? '✓' : '✗'}
+• Спецсимволы: ${assessment.classes.special ? '✓' : '✗'}
 
-SOOTVETSTVIE POLITIKE:
-${assessment.compliance.map(rule => `• ${rule.status}: ${transliterate(rule.rule)}`).join('\n')}
+СООТВЕТСТВИЕ ПОЛИТИКЕ:
+${assessment.compliance.map(rule => `• ${rule.status}: ${rule.rule}`).join('\n')}
 
-${assessment.patterns.length > 0 ? `OBNARUZHENNYE PROBLEMY:
-${assessment.patterns.map(p => `• ${PATTERN_LABELS[p] || p}`).join('\n')}` : ''}
+${assessment.patterns.length > 0 ? `ОБНАРУЖЕННЫЕ ПРОБЛЕМЫ:
+${assessment.patterns.map(p => `• ${PATTERN_LABELS_RU[p] || p}`).join('\n')}` : ''}
 
-${assessment.fix_suggestions.length > 0 ? `REKOMENDACII:
-${assessment.fix_suggestions.map(s => `• ${transliterate(s)}`).join('\n')}` : ''}
+${assessment.fix_suggestions.length > 0 ? `РЕКОМЕНДАЦИИ:
+${assessment.fix_suggestions.map(s => `• ${s}`).join('\n')}` : ''}
 
-Sgenerirowano Password & Entropy Lab
-Vse dannye obrabotany lokalno
+Сгенерировано Password & Entropy Lab
+Все данные обработаны локально
   `;
 
-  downloadBlob(textContent, `password-analysis-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
+  // Добавляем UTF-8 BOM для корректного отображения кириллицы
+  const utf8BOM = '\uFEFF';
+  const finalContent = utf8BOM + textContent;
+
+  downloadBlob(finalContent, `password-analysis-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain;charset=utf-8');
 }
 
 // HTML для печати PDF
