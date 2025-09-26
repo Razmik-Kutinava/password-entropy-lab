@@ -188,6 +188,60 @@ export default function App() {
       <header class="app-header">
         <h1 class="app-title">🔐 Password & Entropy Lab</h1>
         <p class="app-subtitle">Профессиональный анализ безопасности паролей</p>
+        
+        {/* 📱 КНОПКА УСТАНОВКИ PWA */}
+        <div style="margin-top: 16px;">
+          <button 
+            class="install-pwa-btn"
+            onClick={() => {
+              const webUrl = 'https://password-entropy-lab-production.up.railway.app/';
+              if (typeof window.Telegram?.WebApp !== "undefined") {
+                // В Telegram Mini App - открываем в браузере
+                window.Telegram.WebApp.openLink(webUrl);
+              } else {
+                // В обычном браузере - открываем в новой вкладке
+                window.open(webUrl, '_blank');
+              }
+            }}
+            style="
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              border: none;
+              border-radius: 12px;
+              padding: 12px 20px;
+              color: white;
+              font-weight: 600;
+              font-size: 14px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+              transition: all 0.3s ease;
+              width: 100%;
+              justify-content: center;
+            "
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.3)';
+            }}
+          >
+            📱 Установить приложение
+            <span style="font-size: 12px; opacity: 0.9;">→</span>
+          </button>
+          <div style="
+            font-size: 11px; 
+            color: var(--text-secondary); 
+            text-align: center; 
+            margin-top: 8px;
+            line-height: 1.3;
+          ">
+            💡 Установите полноценное приложение для работы офлайн
+          </div>
+        </div>
       </header>
       
       {/* 🛡️ СЕЛЕКТОР ПОЛИТИКИ БЕЗОПАСНОСТИ */}

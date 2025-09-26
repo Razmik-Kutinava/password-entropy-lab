@@ -55,6 +55,18 @@ bot.onText(/\/start/, (msg) => {
         ],
         [
           {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
+          }
+        ],
+        [
+          {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
+          }
+        ],
+        [
+          {
             text: '🛡️ Стандарты',
             callback_data: 'standards'
           },
@@ -125,6 +137,12 @@ bot.onText(/\/help/, (msg) => {
             text: '🔐 Открыть приложение',
             web_app: { url: MINI_APP_URL }
           }
+        ],
+        [
+          {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
+          }
         ]
       ]
     }
@@ -183,6 +201,12 @@ bot.onText(/\/about/, (msg) => {
             text: '🔐 Открыть приложение',
             web_app: { url: MINI_APP_URL }
           }
+        ],
+        [
+          {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
+          }
         ]
       ]
     }
@@ -233,6 +257,12 @@ bot.onText(/\/standards/, (msg) => {
           {
             text: '🔐 Открыть приложение',
             web_app: { url: MINI_APP_URL }
+          }
+        ],
+        [
+          {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
           }
         ],
         [
@@ -291,6 +321,12 @@ bot.onText(/\/security/, (msg) => {
           {
             text: '🔐 Открыть приложение',
             web_app: { url: MINI_APP_URL }
+          }
+        ],
+        [
+          {
+            text: '📱 Установить приложение',
+            url: 'https://password-entropy-lab-production.up.railway.app/'
           }
         ]
       ]
