@@ -1,5 +1,5 @@
 // /src/App.tsx
-import { createSignal, createMemo, onMount, For, Show } from "solid-js";
+import { createSignal, createMemo, createEffect, onMount, For, Show } from "solid-js";
 import { assessPassword, assessPasswordAllPolicies, NIST_MODERATE, type Assessment, type Policy, ALL_POLICIES, POLICY_CATEGORIES } from "./core/assessPassword";
 import { exportPDF, exportJSON } from "./utils/exportPDF";
 
@@ -80,6 +80,11 @@ export default function App() {
   const [isInstalled, setIsInstalled] = createSignal(false);
   const [showInstallInstructions, setShowInstallInstructions] = createSignal(false);
   
+  // Отладка состояния
+  createEffect(() => {
+    console.log('showInstallInstructions changed:', showInstallInstructions());
+  });
+  
   // Реактивный анализ пароля
   const result = createMemo(() => assessPassword(password(), selectedPolicy()));
 
@@ -144,8 +149,12 @@ export default function App() {
 
   // Инициализация Telegram WebApp и PWA
   onMount(() => {
+    console.log("App mounted, checking environment...");
+    
     if (typeof window.Telegram?.WebApp !== "undefined") {
       const tg = window.Telegram.WebApp;
+      
+      console.log("Running in Telegram WebApp");
       
       // Инициализация
       tg.ready();
@@ -172,7 +181,7 @@ export default function App() {
       console.log("Тема:", tg.colorScheme);
       console.log("Параметры темы:", tg.themeParams);
     } else {
-      console.log("Запуск вне Telegram WebApp");
+      console.log("Running in regular browser");
       console.log("Current URL:", window.location.href);
       console.log("Search params:", window.location.search);
       // Детекция PWA только вне Telegram
@@ -343,9 +352,12 @@ export default function App() {
             <span style="font-size: 12px; opacity: 0.9;">→</span>
           </button>
 
-          {/* Кнопка инструкций */}
+          {/* Кнопка инструкций - всегда видна */}
           <button 
-            onClick={() => setShowInstallInstructions(true)}
+            onClick={() => {
+              console.log('Instructions button clicked');
+              setShowInstallInstructions(true);
+            }}
             style="
               background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
               border: none;
