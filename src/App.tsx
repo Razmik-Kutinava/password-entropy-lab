@@ -266,8 +266,9 @@ export default function App() {
         <h1 class="app-title">🔐 Password & Entropy Lab</h1>
         <p class="app-subtitle">Профессиональный анализ безопасности паролей</p>
         
-        {/* 📱 КНОПКА УСТАНОВКИ PWA */}
-        <div style="margin-top: 16px;">
+        {/* 📱 КНОПКИ УСТАНОВКИ PWA */}
+        <div style="margin-top: 16px; display: flex; gap: 12px; flex-direction: column;">
+          {/* Основная кнопка установки */}
           <button 
             class="install-pwa-btn"
             onClick={() => {
@@ -341,6 +342,40 @@ export default function App() {
             })()}
             <span style="font-size: 12px; opacity: 0.9;">→</span>
           </button>
+
+          {/* Кнопка инструкций */}
+          <button 
+            onClick={() => setShowInstallInstructions(true)}
+            style="
+              background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
+              border: none;
+              border-radius: 12px;
+              padding: 10px 16px;
+              color: white;
+              font-weight: 600;
+              font-size: 13px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              box-shadow: 0 4px 16px rgba(0, 200, 81, 0.3);
+              transition: all 0.3s ease;
+              width: 100%;
+              justify-content: center;
+            "
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 200, 81, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 200, 81, 0.3)';
+            }}
+          >
+            📋 Прочитать инструкцию
+            <span style="font-size: 12px; opacity: 0.9;">?</span>
+          </button>
+
           <div style="
             font-size: 11px; 
             color: var(--text-secondary); 
@@ -467,7 +502,7 @@ export default function App() {
             max-height: 80vh;
             overflow-y: auto;
           ">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; position: relative;">
               <div style="
                 background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
                 border-radius: 50%;
@@ -481,7 +516,7 @@ export default function App() {
               ">
                 📱
               </div>
-              <div>
+              <div style="flex: 1;">
                 <div style="font-weight: 700; color: var(--text-primary); font-size: 18px;">
                   🚀 Установите SecPass на рабочий стол!
                 </div>
@@ -489,6 +524,40 @@ export default function App() {
                   Следуйте инструкции ниже для вашего устройства
                 </div>
               </div>
+              
+              {/* Кнопка закрытия */}
+              <button
+                onClick={() => setShowInstallInstructions(false)}
+                style="
+                  position: absolute;
+                  top: -8px;
+                  right: -8px;
+                  background: rgba(255, 68, 68, 0.9);
+                  border: none;
+                  border-radius: 50%;
+                  width: 32px;
+                  height: 32px;
+                  color: white;
+                  font-weight: bold;
+                  font-size: 16px;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  transition: all 0.3s ease;
+                  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+                "
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 68, 68, 1)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 68, 68, 0.9)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                ✕
+              </button>
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -584,7 +653,7 @@ export default function App() {
                 onClick={() => setShowInstallInstructions(false)}
                 style="
                   flex: 1;
-                  background: var(--primary-blue);
+                  background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
                   border: none;
                   border-radius: 12px;
                   padding: 12px 20px;
@@ -593,15 +662,18 @@ export default function App() {
                   font-size: 14px;
                   cursor: pointer;
                   transition: all 0.3s ease;
+                  box-shadow: 0 4px 16px rgba(0, 200, 81, 0.3);
                 "
                 onMouseOver={(e) => {
-                  e.currentTarget.style.background = '#0052a3';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 200, 81, 0.4)';
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'var(--primary-blue)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 200, 81, 0.3)';
                 }}
               >
-                Понятно
+                ✅ Понятно, спасибо!
               </button>
             </div>
           </div>
