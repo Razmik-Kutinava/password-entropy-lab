@@ -116,9 +116,16 @@ export default function App() {
 
     // Проверяем параметры URL для показа инструкций
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('from') === 'telegram' && urlParams.get('show_instructions') === 'true') {
+    const fromTelegram = urlParams.get('from') === 'telegram';
+    const showInstructions = urlParams.get('show_instructions') === 'true';
+    
+    console.log('URL params:', { fromTelegram, showInstructions, search: window.location.search });
+    
+    if (fromTelegram && showInstructions) {
       // Сразу показываем инструкции при переходе из Telegram
+      console.log('Showing instructions from Telegram');
       setTimeout(() => {
+        console.log('Setting showInstallInstructions to true');
         setShowInstallInstructions(true);
       }, 1000); // Небольшая задержка для загрузки интерфейса
       return;
@@ -166,6 +173,8 @@ export default function App() {
       console.log("Параметры темы:", tg.themeParams);
     } else {
       console.log("Запуск вне Telegram WebApp");
+      console.log("Current URL:", window.location.href);
+      console.log("Search params:", window.location.search);
       // Детекция PWA только вне Telegram
       detectInstallability();
     }
@@ -272,8 +281,21 @@ export default function App() {
                   window.open(webUrl, '_blank');
                 }
               } else {
-                // В обычном браузере - используем новую логику установки
-                handleInstallClick();
+                // В обычном браузере - проверяем параметры URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromTelegram = urlParams.get('from') === 'telegram';
+                const showInstructions = urlParams.get('show_instructions') === 'true';
+                
+                console.log('Button click in browser:', { fromTelegram, showInstructions });
+                
+                if (fromTelegram && showInstructions) {
+                  // Если пришли из Telegram - показываем инструкции
+                  console.log('Showing instructions from button click');
+                  setShowInstallInstructions(true);
+                } else {
+                  // Обычная логика PWA установки
+                  handleInstallClick();
+                }
               }
             }}
             style="
@@ -302,7 +324,21 @@ export default function App() {
               e.currentTarget.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.3)';
             }}
           >
-            📱 Установить приложение
+            {(() => {
+              if (typeof window.Telegram?.WebApp !== "undefined") {
+                return "📱 Установить приложение";
+              } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromTelegram = urlParams.get('from') === 'telegram';
+                const showInstructions = urlParams.get('show_instructions') === 'true';
+                
+                if (fromTelegram && showInstructions) {
+                  return "📋 Показать инструкции";
+                } else {
+                  return "📱 Установить приложение";
+                }
+              }
+            })()}
             <span style="font-size: 12px; opacity: 0.9;">→</span>
           </button>
           <div style="
