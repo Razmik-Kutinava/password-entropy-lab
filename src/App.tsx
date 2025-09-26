@@ -1,6 +1,6 @@
 // /src/App.tsx
-import { createSignal, createMemo, onMount, For } from "solid-js";
-import { assessPassword, NIST_MODERATE, type Assessment } from "./core/assessPassword";
+import { createSignal, createMemo, onMount, For, Show } from "solid-js";
+import { assessPassword, NIST_MODERATE, type Assessment, type Policy, ALL_POLICIES, POLICY_CATEGORIES } from "./core/assessPassword";
 import { exportPDF, exportJSON } from "./utils/exportPDF";
 
 // Типы для Telegram WebApp
@@ -69,9 +69,12 @@ const PATTERN_LABELS: Record<string, string> = {
 export default function App() {
   const [password, setPassword] = createSignal("");
   const [showPassword, setShowPassword] = createSignal(false);
+  const [selectedPolicy, setSelectedPolicy] = createSignal<Policy>(NIST_MODERATE);
+  const [showPolicySelector, setShowPolicySelector] = createSignal(false);
+  const [activeCategory, setActiveCategory] = createSignal<keyof typeof POLICY_CATEGORIES>("basic");
   
   // Реактивный анализ пароля
-  const result = createMemo(() => assessPassword(password(), NIST_MODERATE));
+  const result = createMemo(() => assessPassword(password(), selectedPolicy()));
 
   // Определение общего статуса
   const status = createMemo(() => {
@@ -142,6 +145,132 @@ export default function App() {
         🔐 Password & Entropy Lab
       </h1>
       
+      {/* Селектор политики безопасности */}
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <label style="font-weight: bold; color: var(--tg-theme-text-color, #333);">
+            🛡️ Политика безопасности:
+          </label>
+          <button
+            onClick={() => setShowPolicySelector(!showPolicySelector())}
+            style={`
+              background: ${selectedPolicy().color}; 
+              color: white; 
+              border: none; 
+              border-radius: 20px; 
+              padding: 8px 16px; 
+              cursor: pointer; 
+              font-size: 14px;
+              font-weight: bold;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              transition: all 0.2s ease;
+            `}
+          >
+            {selectedPolicy().icon} {selectedPolicy().display_name}
+            <span style="margin-left: 4px;">{showPolicySelector() ? "▲" : "▼"}</span>
+          </button>
+        </div>
+        
+        <Show when={showPolicySelector()}>
+          <div style="
+            background: var(--tg-theme-bg-color, #f8f9fa);
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+          ">
+            {/* Категории */}
+            <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 8px;">
+              <For each={Object.entries(POLICY_CATEGORIES)}>
+                {([key, category]) => (
+                  <button
+                    onClick={() => setActiveCategory(key as keyof typeof POLICY_CATEGORIES)}
+                    style={`
+                      background: ${activeCategory() === key ? '#3b82f6' : 'transparent'};
+                      color: ${activeCategory() === key ? 'white' : 'var(--tg-theme-text-color, #666)'};
+                      border: 1px solid ${activeCategory() === key ? '#3b82f6' : '#ddd'};
+                      border-radius: 20px;
+                      padding: 8px 16px;
+                      cursor: pointer;
+                      font-size: 12px;
+                      font-weight: bold;
+                      white-space: nowrap;
+                      transition: all 0.2s ease;
+                    `}
+                  >
+                    {category.title}
+                  </button>
+                )}
+              </For>
+            </div>
+            
+            {/* Описание категории */}
+            <p style="
+              color: var(--tg-theme-hint-color, #666);
+              font-size: 13px;
+              margin: 0 0 16px 0;
+              font-style: italic;
+            ">
+              {POLICY_CATEGORIES[activeCategory()].description}
+            </p>
+            
+            {/* Политики */}
+            <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+              <For each={POLICY_CATEGORIES[activeCategory()].policies}>
+                {(policy) => (
+                  <button
+                    onClick={() => {
+                      setSelectedPolicy(policy);
+                      setShowPolicySelector(false);
+                    }}
+                    style={`
+                      background: ${selectedPolicy().name === policy.name ? policy.color + '20' : 'transparent'};
+                      border: 2px solid ${selectedPolicy().name === policy.name ? policy.color : '#e5e7eb'};
+                      border-radius: 12px;
+                      padding: 12px;
+                      cursor: pointer;
+                      text-align: left;
+                      transition: all 0.2s ease;
+                      display: flex;
+                      align-items: center;
+                      gap: 12px;
+                    `}
+                  >
+                    <div style={`
+                      background: ${policy.color};
+                      color: white;
+                      border-radius: 50%;
+                      width: 40px;
+                      height: 40px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 18px;
+                      flex-shrink: 0;
+                    `}>
+                      {policy.icon}
+                    </div>
+                    <div style="flex: 1;">
+                      <div style="font-weight: bold; color: var(--tg-theme-text-color, #333); margin-bottom: 4px;">
+                        {policy.display_name}
+                      </div>
+                      <div style="font-size: 12px; color: var(--tg-theme-hint-color, #666); line-height: 1.3;">
+                        {policy.description}
+                      </div>
+                      <div style="font-size: 11px; color: var(--tg-theme-hint-color, #888); margin-top: 4px;">
+                        Мин. длина: {policy.min_length} • Энтропия: {policy.min_entropy || 30}+ бит
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
+        </Show>
+      </div>
+      
       <div style="position: relative; margin-bottom: 16px;">
         <input
           type={showPassword() ? "text" : "password"}
@@ -163,6 +292,41 @@ export default function App() {
       {/* Показываем анализ только если есть пароль */}
       {password().length > 0 && (
         <>
+          {/* Текущая политика */}
+          <div style={`
+            background: ${selectedPolicy().color}15;
+            border: 2px solid ${selectedPolicy().color};
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          `}>
+            <div style={`
+              background: ${selectedPolicy().color};
+              color: white;
+              border-radius: 50%;
+              width: 32px;
+              height: 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 14px;
+              flex-shrink: 0;
+            `}>
+              {selectedPolicy().icon}
+            </div>
+            <div>
+              <div style="font-weight: bold; color: var(--tg-theme-text-color, #333);">
+                Проверка по стандарту: {selectedPolicy().display_name}
+              </div>
+              <div style="font-size: 12px; color: var(--tg-theme-hint-color, #666);">
+                {selectedPolicy().description}
+              </div>
+            </div>
+          </div>
+
           {/* Статус */}
           <div class={`status-card ${
             status() === "OK" ? "status-ok" : 
