@@ -6,16 +6,22 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:pwa": "tsc && vite build --mode production",
     "preview": "vite preview",
+    "preview:pwa": "vite preview --host",
     "start": "node start-production.cjs",
     "bot": "node telegram-bot.cjs",
-    "bot:prod": "node bot-production.cjs"
+    "bot:prod": "node bot-production.cjs",
+    "generate-icons": "node generate-icons.cjs"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
+    "sharp": "^0.34.4",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vite-plugin-solid": "^2.7.0"
+    "vite-plugin-pwa": "^1.0.3",
+    "vite-plugin-solid": "^2.7.0",
+    "workbox-window": "^7.3.0"
   },
   "dependencies": {
     "express": "^4.21.2",
