@@ -480,23 +480,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 📊 ЭКСПОРТ ОТЧЕТОВ */}
-          <div class="section">
-            <div class="section-title">📊 Экспорт профессиональных отчетов</div>
-            <div class="export-buttons">
-              <button class="btn btn-secondary" onClick={handleExportJSON}>
-                <div class="btn-icon">📊</div>
-                <div class="btn-text">JSON Отчет</div>
-                <div class="btn-subtext">Данные для анализа</div>
-              </button>
-              <button class="btn btn-primary" onClick={handleExportPDF}>
-                <div class="btn-icon">📋</div>
-                <div class="btn-text">PDF Отчет</div>
-                <div class="btn-subtext">Полный анализ</div>
-              </button>
-            </div>
-          </div>
-
           {/* 🔒 ИНФОРМАЦИЯ О БЕЗОПАСНОСТИ */}
           <div class="section" style="
             background: linear-gradient(135deg, rgba(0, 200, 81, 0.1), rgba(0, 200, 81, 0.05));
@@ -525,6 +508,23 @@ export default function App() {
                   Весь анализ выполняется локально в вашем браузере. Пароли не передаются по сети и не сохраняются на серверах.
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* 📊 ЭКСПОРТ ОТЧЕТОВ - ПЕРЕМЕЩЕНО ВНИЗ */}
+          <div class="section" style="margin-top: 20px;">
+            <div class="section-title">📊 Экспорт отчетов</div>
+            <div class="export-buttons">
+              <button class="btn btn-secondary" onClick={handleExportJSON}>
+                <div class="btn-icon">📊</div>
+                <div class="btn-text">JSON</div>
+                <div class="btn-subtext">Данные</div>
+              </button>
+              <button class="btn btn-primary" onClick={handleExportPDF}>
+                <div class="btn-icon">📋</div>
+                <div class="btn-text">PDF</div>
+                <div class="btn-subtext">Отчет</div>
+              </button>
             </div>
           </div>
         </>
