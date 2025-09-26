@@ -215,24 +215,12 @@ export default function App() {
             backdrop-filter: blur(10px);
           ">
             {/* 📂 КАТЕГОРИИ */}
-            <div style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px;">
+            <div class="category-tabs">
               <For each={Object.entries(POLICY_CATEGORIES)}>
                 {([key, category]) => (
                   <button
+                    class={`category-tab ${activeCategory() === key ? 'active' : ''}`}
                     onClick={() => setActiveCategory(key as keyof typeof POLICY_CATEGORIES)}
-                    style={`
-                      background: ${activeCategory() === key ? 'var(--gradient-cyber)' : 'rgba(255, 255, 255, 0.1)'};
-                      color: white;
-                      border: 1px solid ${activeCategory() === key ? 'transparent' : 'var(--border-color)'};
-                      border-radius: 25px;
-                      padding: 10px 18px;
-                      cursor: pointer;
-                      font-size: 13px;
-                      font-weight: 600;
-                      white-space: nowrap;
-                      transition: all 0.3s ease;
-                      backdrop-filter: blur(10px);
-                    `}
                   >
                     {category.title}
                   </button>
@@ -259,75 +247,39 @@ export default function App() {
             </div>
             
             {/* 🛡️ ПОЛИТИКИ */}
-            <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+            <div class="policy-grid">
               <For each={POLICY_CATEGORIES[activeCategory()].policies}>
                 {(policy) => (
                   <button
+                    class={`policy-item ${selectedPolicy().name === policy.name ? 'active' : ''}`}
                     onClick={() => {
                       setSelectedPolicy(policy);
                       setShowPolicySelector(false);
                     }}
                     style={`
-                      background: ${selectedPolicy().name === policy.name ? 
-                        `linear-gradient(135deg, ${policy.color}20, ${policy.color}10)` : 
-                        'rgba(255, 255, 255, 0.05)'
-                      };
-                      border: 2px solid ${selectedPolicy().name === policy.name ? policy.color : 'var(--border-color)'};
-                      border-radius: 16px;
-                      padding: 16px;
-                      cursor: pointer;
-                      text-align: left;
-                      transition: all 0.3s ease;
-                      display: flex;
-                      align-items: center;
-                      gap: 16px;
-                      backdrop-filter: blur(10px);
+                      border-color: ${selectedPolicy().name === policy.name ? policy.color : 'var(--border-color)'};
                     `}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = `0 8px 32px ${policy.color}40`;
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
                   >
-                    <div style={`
+                    <div class="policy-icon" style={`
                       background: linear-gradient(135deg, ${policy.color}, ${policy.color}dd);
-                      color: white;
-                      border-radius: 50%;
-                      width: 48px;
-                      height: 48px;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      font-size: 20px;
-                      flex-shrink: 0;
                       box-shadow: 0 4px 16px ${policy.color}40;
                     `}>
                       {policy.icon}
                     </div>
-                    <div style="flex: 1;">
+                    <div class="policy-info">
                       <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px; font-size: 16px;">
                         {policy.display_name}
                       </div>
                       <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
                         {policy.description}
                       </div>
-                      <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary);">
-                        <span style="
-                          background: rgba(0, 102, 204, 0.2);
-                          padding: 4px 8px;
-                          border-radius: 12px;
-                          border: 1px solid rgba(0, 102, 204, 0.3);
-                        ">
+                      <div class="policy-meta">
+                        <span class="meta-tag">
                           📏 {policy.min_length}+ симв.
                         </span>
-                        <span style="
+                        <span class="meta-tag" style="
                           background: rgba(0, 200, 81, 0.2);
-                          padding: 4px 8px;
-                          border-radius: 12px;
-                          border: 1px solid rgba(0, 200, 81, 0.3);
+                          border-color: rgba(0, 200, 81, 0.3);
                         ">
                           ⚡ {policy.min_entropy || 30}+ бит
                         </span>
@@ -531,15 +483,17 @@ export default function App() {
           {/* 📊 ЭКСПОРТ ОТЧЕТОВ */}
           <div class="section">
             <div class="section-title">📊 Экспорт профессиональных отчетов</div>
-          <div class="export-buttons">
-            <button class="btn btn-secondary" onClick={handleExportJSON}>
-                📊 JSON Отчет
-                <div style="font-size: 11px; opacity: 0.8;">Данные для анализа</div>
-            </button>
-            <button class="btn btn-primary" onClick={handleExportPDF}>
-                📋 PDF Отчет
-                <div style="font-size: 11px; opacity: 0.8;">Полный анализ</div>
-            </button>
+            <div class="export-buttons">
+              <button class="btn btn-secondary" onClick={handleExportJSON}>
+                <div class="btn-icon">📊</div>
+                <div class="btn-text">JSON Отчет</div>
+                <div class="btn-subtext">Данные для анализа</div>
+              </button>
+              <button class="btn btn-primary" onClick={handleExportPDF}>
+                <div class="btn-icon">📋</div>
+                <div class="btn-text">PDF Отчет</div>
+                <div class="btn-subtext">Полный анализ</div>
+              </button>
             </div>
           </div>
 
