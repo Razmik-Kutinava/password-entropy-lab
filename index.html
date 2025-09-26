@@ -614,6 +614,17 @@
       50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.8); }
     }
 
+    @keyframes slideInDown {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
     .glow-animation {
       animation: glow 2s ease-in-out infinite;
     }

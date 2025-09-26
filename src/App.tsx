@@ -74,6 +74,12 @@ export default function App() {
   const [showPolicySelector, setShowPolicySelector] = createSignal(false);
   const [activeCategory, setActiveCategory] = createSignal<keyof typeof POLICY_CATEGORIES>("basic");
   
+  // PWA Install states
+  const [deferredPrompt, setDeferredPrompt] = createSignal<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = createSignal(false);
+  const [isInstalled, setIsInstalled] = createSignal(false);
+  const [showInstallInstructions, setShowInstallInstructions] = createSignal(false);
+  
   // Реактивный анализ пароля
   const result = createMemo(() => assessPassword(password(), selectedPolicy()));
 
@@ -85,7 +91,41 @@ export default function App() {
     return "OK";
   });
 
-  // Инициализация Telegram WebApp
+  // PWA Install functions
+  const handleInstallClick = async () => {
+    if (deferredPrompt()) {
+      // Показываем встроенное предложение установки
+      deferredPrompt().prompt();
+      const { outcome } = await deferredPrompt().userChoice;
+      console.log(`PWA install outcome: ${outcome}`);
+      setDeferredPrompt(null);
+      setShowInstallPrompt(false);
+    } else {
+      // Показываем инструкции для ручной установки
+      setShowInstallInstructions(true);
+    }
+  };
+
+  const detectInstallability = () => {
+    // Проверяем, установлено ли уже приложение
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone === true) {
+      setIsInstalled(true);
+      return;
+    }
+
+    // Проверяем, можно ли установить PWA
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      // Показываем предложение установки через 3 секунды после загрузки
+      setTimeout(() => {
+        if (!localStorage.getItem('pwa-install-offered')) {
+          setShowInstallPrompt(true);
+        }
+      }, 3000);
+    }
+  };
+
+  // Инициализация Telegram WebApp и PWA
   onMount(() => {
     if (typeof window.Telegram?.WebApp !== "undefined") {
       const tg = window.Telegram.WebApp;
@@ -116,7 +156,24 @@ export default function App() {
       console.log("Параметры темы:", tg.themeParams);
     } else {
       console.log("Запуск вне Telegram WebApp");
+      // Детекция PWA только вне Telegram
+      detectInstallability();
     }
+
+    // Обработчик события beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    });
+
+    // Обработчик события appinstalled
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+      console.log('PWA was installed');
+    });
   });
 
   const handlePasswordInput = (e: Event) => {
@@ -195,9 +252,9 @@ export default function App() {
           <button 
             class="install-pwa-btn"
             onClick={() => {
-              const webUrl = 'https://password-entropy-lab-production.up.railway.app/';
               if (typeof window.Telegram?.WebApp !== "undefined") {
                 // В Telegram Mini App - открываем в браузере
+                const webUrl = 'https://password-entropy-lab-production.up.railway.app/';
                 if (window.Telegram.WebApp.openLink) {
                   window.Telegram.WebApp.openLink(webUrl);
                 } else {
@@ -205,8 +262,8 @@ export default function App() {
                   window.open(webUrl, '_blank');
                 }
               } else {
-                // В обычном браузере - открываем в новой вкладке
-                window.open(webUrl, '_blank');
+                // В обычном браузере - используем новую логику установки
+                handleInstallClick();
               }
             }}
             style="
@@ -249,6 +306,224 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* 🚀 АВТОМАТИЧЕСКОЕ ПРЕДЛОЖЕНИЕ УСТАНОВКИ PWA */}
+      <Show when={showInstallPrompt() && !isInstalled()}>
+        <div style="
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: 0 8px 32px rgba(0, 200, 81, 0.3);
+          z-index: 1000;
+          animation: slideInDown 0.5s ease-out;
+        ">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 50%;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 20px;
+            ">
+              📱
+            </div>
+            <div>
+              <div style="font-weight: 700; color: white; font-size: 16px;">
+                Установите SecPass!
+              </div>
+              <div style="font-size: 13px; color: rgba(255, 255, 255, 0.9);">
+                Получите полноценное приложение с офлайн работой
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 8px;">
+            <button
+              onClick={handleInstallClick}
+              style="
+                flex: 1;
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                padding: 10px 16px;
+                color: white;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              "
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              }}
+            >
+              🚀 Установить
+            </button>
+            <button
+              onClick={() => {
+                setShowInstallPrompt(false);
+                localStorage.setItem('pwa-install-offered', 'true');
+              }}
+              style="
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                padding: 10px 16px;
+                color: white;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              "
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Позже
+            </button>
+          </div>
+        </div>
+      </Show>
+
+      {/* 📋 ИНСТРУКЦИИ ДЛЯ ANDROID */}
+      <Show when={showInstallInstructions()}>
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        ">
+          <div style="
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+          ">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+              <div style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 50%;
+                width: 48px;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+              ">
+                📱
+              </div>
+              <div>
+                <div style="font-weight: 700; color: var(--text-primary); font-size: 18px;">
+                  Установка приложения
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary);">
+                  Следуйте инструкции ниже
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+              <div style="
+                background: rgba(102, 126, 234, 0.1);
+                border-left: 4px solid #667eea;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+              ">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                  🤖 Для Android (Chrome/Samsung):
+                </div>
+                <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
+                  <li>Нажмите на меню браузера (три точки)</li>
+                  <li>Выберите "Установить приложение" или "Добавить на главный экран"</li>
+                  <li>Подтвердите установку</li>
+                </ol>
+              </div>
+
+              <div style="
+                background: rgba(0, 200, 81, 0.1);
+                border-left: 4px solid #00c851;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+              ">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                  🍎 Для iPhone (Safari):
+                </div>
+                <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
+                  <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой)</li>
+                  <li>Выберите "На экран Домой"</li>
+                  <li>Нажмите "Добавить"</li>
+                </ol>
+              </div>
+
+              <div style="
+                background: rgba(255, 136, 0, 0.1);
+                border-left: 4px solid #ff8800;
+                padding: 16px;
+                border-radius: 8px;
+              ">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                  💻 Для компьютера:
+                </div>
+                <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
+                  <li>Найдите иконку установки в адресной строке</li>
+                  <li>Нажмите "Установить SecPass"</li>
+                  <li>Подтвердите установку</li>
+                </ol>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+              <button
+                onClick={() => setShowInstallInstructions(false)}
+                style="
+                  flex: 1;
+                  background: var(--primary-blue);
+                  border: none;
+                  border-radius: 12px;
+                  padding: 12px 20px;
+                  color: white;
+                  font-weight: 600;
+                  font-size: 14px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                "
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = '#0052a3';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'var(--primary-blue)';
+                }}
+              >
+                Понятно
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
       
       {/* 🛡️ СЕЛЕКТОР ПОЛИТИКИ БЕЗОПАСНОСТИ */}
       <div class="policy-selector">
