@@ -114,6 +114,16 @@ export default function App() {
       return;
     }
 
+    // Проверяем параметры URL для показа инструкций
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'telegram' && urlParams.get('show_instructions') === 'true') {
+      // Сразу показываем инструкции при переходе из Telegram
+      setTimeout(() => {
+        setShowInstallInstructions(true);
+      }, 1000); // Небольшая задержка для загрузки интерфейса
+      return;
+    }
+
     // Проверяем, можно ли установить PWA
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       // Показываем предложение установки через 3 секунды после загрузки
@@ -254,7 +264,7 @@ export default function App() {
             onClick={() => {
               if (typeof window.Telegram?.WebApp !== "undefined") {
                 // В Telegram Mini App - открываем в браузере
-                const webUrl = 'https://password-entropy-lab-production.up.railway.app/';
+                const webUrl = 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true';
                 if (window.Telegram.WebApp.openLink) {
                   window.Telegram.WebApp.openLink(webUrl);
                 } else {
@@ -423,7 +433,7 @@ export default function App() {
           ">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
               <div style="
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #00c851 0%, #00ff88 100%);
                 border-radius: 50%;
                 width: 48px;
                 height: 48px;
@@ -431,15 +441,16 @@ export default function App() {
                 align-items: center;
                 justify-content: center;
                 font-size: 24px;
+                animation: pulse 2s infinite;
               ">
                 📱
               </div>
               <div>
                 <div style="font-weight: 700; color: var(--text-primary); font-size: 18px;">
-                  Установка приложения
+                  🚀 Установите SecPass на рабочий стол!
                 </div>
                 <div style="font-size: 14px; color: var(--text-secondary);">
-                  Следуйте инструкции ниже
+                  Следуйте инструкции ниже для вашего устройства
                 </div>
               </div>
             </div>
@@ -456,10 +467,22 @@ export default function App() {
                   🤖 Для Android (Chrome/Samsung):
                 </div>
                 <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
-                  <li>Нажмите на меню браузера (три точки)</li>
-                  <li>Выберите "Установить приложение" или "Добавить на главный экран"</li>
-                  <li>Подтвердите установку</li>
+                  <li>Нажмите на меню браузера (три точки ⋮ в правом верхнем углу)</li>
+                  <li>Найдите "Установить приложение" или "Добавить на главный экран"</li>
+                  <li>Нажмите "Установить" в появившемся окне</li>
+                  <li>Готово! Иконка SecPass появится на рабочем столе</li>
                 </ol>
+                <div style="
+                  background: rgba(102, 126, 234, 0.05);
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  margin-top: 8px;
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  font-style: italic;
+                ">
+                  💡 Если не видите "Установить приложение", попробуйте обновить страницу
+                </div>
               </div>
 
               <div style="
@@ -473,10 +496,22 @@ export default function App() {
                   🍎 Для iPhone (Safari):
                 </div>
                 <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
-                  <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой)</li>
-                  <li>Выберите "На экран Домой"</li>
-                  <li>Нажмите "Добавить"</li>
+                  <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой вниз)</li>
+                  <li>Прокрутите вниз и найдите "На экран Домой"</li>
+                  <li>Нажмите "Добавить" в правом верхнем углу</li>
+                  <li>Готово! Иконка SecPass появится на главном экране</li>
                 </ol>
+                <div style="
+                  background: rgba(0, 200, 81, 0.05);
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  margin-top: 8px;
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  font-style: italic;
+                ">
+                  💡 Кнопка "Поделиться" находится в нижней части экрана
+                </div>
               </div>
 
               <div style="
@@ -486,13 +521,25 @@ export default function App() {
                 border-radius: 8px;
               ">
                 <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
-                  💻 Для компьютера:
+                  💻 Для компьютера (Chrome/Edge):
                 </div>
                 <ol style="margin: 0; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
-                  <li>Найдите иконку установки в адресной строке</li>
-                  <li>Нажмите "Установить SecPass"</li>
-                  <li>Подтвердите установку</li>
+                  <li>Найдите иконку установки 📱 в адресной строке (справа)</li>
+                  <li>Нажмите "Установить SecPass" в появившемся окне</li>
+                  <li>Подтвердите установку кнопкой "Установить"</li>
+                  <li>Готово! Приложение появится в меню Пуск</li>
                 </ol>
+                <div style="
+                  background: rgba(255, 136, 0, 0.05);
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  margin-top: 8px;
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  font-style: italic;
+                ">
+                  💡 Иконка установки может появиться не сразу, подождите несколько секунд
+                </div>
               </div>
             </div>
 

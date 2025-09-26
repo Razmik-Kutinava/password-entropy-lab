@@ -56,13 +56,13 @@ bot.onText(/\/start/, (msg) => {
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ],
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ],
         [
@@ -141,7 +141,7 @@ bot.onText(/\/help/, (msg) => {
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ]
       ]
@@ -205,7 +205,7 @@ bot.onText(/\/about/, (msg) => {
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ]
       ]
@@ -262,7 +262,7 @@ bot.onText(/\/standards/, (msg) => {
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ],
         [
@@ -326,7 +326,7 @@ bot.onText(/\/security/, (msg) => {
         [
           {
             text: '📱 Установить приложение',
-            url: 'https://password-entropy-lab-production.up.railway.app/'
+            url: 'https://password-entropy-lab-production.up.railway.app/?from=telegram&show_instructions=true'
           }
         ]
       ]
