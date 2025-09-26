@@ -58,21 +58,42 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4
     const { width, height } = page.getSize();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    // Используем Times Roman для лучшей поддержки символов
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
 
     let y = height - 60;
     const margin = 50;
 
     const drawText = (text: string, size = 12, bold = false, color = rgb(0, 0, 0)) => {
-      page.drawText(text, {
-        x: margin,
-        y,
-        size,
-        font: bold ? boldFont : font,
-        color,
-        maxWidth: width - 2 * margin
-      });
+      try {
+        // Очищаем текст от проблемных символов и обеспечиваем UTF-8
+        const cleanText = text
+          .replace(/[^\u0000-\u00FF\u0100-\u017F\u0400-\u04FF]/g, '?') // Заменяем неподдерживаемые символы
+          .normalize('NFC'); // Нормализуем Unicode
+        
+        page.drawText(cleanText, {
+          x: margin,
+          y,
+          size,
+          font: bold ? boldFont : font,
+          color,
+          maxWidth: width - 2 * margin
+        });
+      } catch (error) {
+        console.warn('Ошибка отрисовки текста:', text, error);
+        // Fallback - используем базовые ASCII символы
+        const fallbackText = text.replace(/[^\x00-\x7F]/g, '?');
+        page.drawText(fallbackText, {
+          x: margin,
+          y,
+          size,
+          font: bold ? boldFont : font,
+          color,
+          maxWidth: width - 2 * margin
+        });
+      }
       y -= size + 4;
     };
 
@@ -174,7 +195,13 @@ export async function exportPDF(assessment: Assessment): Promise<void> {
 // Функция для скачивания blob
 function downloadBlob(data: any, filename: string, type: string) {
   try {
-    const blob = new Blob([data], { type });
+    // Обеспечиваем правильную кодировку для текстовых файлов
+    const blobOptions: BlobPropertyBag = { type };
+    if (type.includes('text') || type.includes('json')) {
+      blobOptions.type = type + ';charset=utf-8';
+    }
+    
+    const blob = new Blob([data], blobOptions);
     const url = URL.createObjectURL(blob);
     
     // Telegram WebApp совместимое скачивание
@@ -233,21 +260,32 @@ ${assessment.fix_suggestions.map(s => `• ${s}`).join('\n')}` : ''}
 
 Сгенерировано Password & Entropy Lab
 Все данные обработаны локально
-  `;
+  `.normalize('NFC'); // Нормализуем весь текст
 
-  downloadBlob(textContent, `password-analysis-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
+  // Добавляем BOM для лучшей совместимости
+  const utf8BOM = '\uFEFF';
+  const finalContent = utf8BOM + textContent;
+
+  downloadBlob(finalContent, `password-analysis-${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
 }
 
 // HTML для печати PDF
 function generatePDFHTML(assessment: Assessment): string {
   return `
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Password Analysis Report</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
+        body { 
+            font-family: 'Times New Roman', 'DejaVu Serif', serif; 
+            margin: 20px; 
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
         h1 { color: #333; text-align: center; }
         h2 { color: #666; border-bottom: 1px solid #ddd; }
         .metric { margin: 5px 0; }
@@ -301,8 +339,22 @@ function generatePDFHTML(assessment: Assessment): string {
 
 export function exportJSON(assessment: Assessment): void {
   try {
-    const jsonData = JSON.stringify(assessment, null, 2);
-    downloadBlob(jsonData, `password-analysis-${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
+    // Создаем копию объекта для очистки от проблемных символов
+    const cleanAssessment = JSON.parse(JSON.stringify(assessment, (key, value) => {
+      if (typeof value === 'string') {
+        // Нормализуем строки для лучшей совместимости
+        return value.normalize('NFC');
+      }
+      return value;
+    }));
+    
+    const jsonData = JSON.stringify(cleanAssessment, null, 2);
+    
+    // Добавляем BOM для UTF-8 (помогает с кодировкой на Windows)
+    const utf8BOM = '\uFEFF';
+    const finalData = utf8BOM + jsonData;
+    
+    downloadBlob(finalData, `password-analysis-${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
     console.log("JSON успешно экспортирован");
   } catch (error) {
     console.error("Ошибка экспорта JSON:", error);
